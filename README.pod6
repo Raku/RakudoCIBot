@@ -1,0 +1,17 @@
+=begin pod
+
+=NAME    RakuCIBot
+=AUTHOR  Patrick Böker <patrickb@cpan.org>
+=VERSION 0
+
+=head1 Description
+
+A system to orchestrate the CI process of the Rakudo compiler and its related projects.
+
+=head1 Installation
+
+=head1 License
+
+This module is distributed under the terms of the Artistic License 2.0.
+
+=end pod
