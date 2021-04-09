@@ -6,9 +6,26 @@
 
 =head1 Description
 
-A system to orchestrate the CI process of the Rakudo compiler and its related projects.
+A system to orchestrate the CI process of the Rakudo compiler and its related
+projects.
 
 =head1 Installation
+
+Build the container with
+
+    podman build -t raku-ci-bot .
+
+run it with
+
+    podman run --rm -p 10000:10000 raku-ci-bot
+
+To export the container for upload to a server do
+
+    podman save localhost/raku-ci-bot:latest | gzip > raku-ci-bot_latest.tgz
+
+For quicker uploads it might make sense to not C<gzip> the image and use
+C<rsync> for the upload.
+
 
 =head1 License
 

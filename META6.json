@@ -5,10 +5,10 @@
     "Patrick Böker <patrickb@cpan.org>"
   ],
   "depends": [
-      "WebService::GitHub",
-      "HTTP::Tiny",
-      "LibXML",
-      "Base64"
+      "Cro::HTTP:ver<0.8.4>",
+      "Cro::WebApp:ver<0.8.4>",
+      "LibXML:ver<0.5.15>",
+      "Base64:ver<0.0.2>"
   ],
   "test-depends": [
       "Test::SourceFiles"
