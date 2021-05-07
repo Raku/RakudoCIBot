@@ -1,0 +1,160 @@
+@startuml
+participant CroRouter            As cr
+participant GitHubTestRequester  As gtr
+participant TestTaskManager      As ttm
+participant SourceArchiveCreator As sac
+participant AzureCiPlatform      As acp
+participant ObsCiPlatform        As ocp
+
+== New Commit ==
+
+[-> cr: notification from GitHub
+activate cr
+
+cr -> gtr: process-hook()
+activate gtr
+
+note over gtr
+    add request to work list,
+    call trigger-process-worklist()
+    which instantly returns
+end note
+
+return
+
+deactivate cr
+
+== GitHubTestRequester.process-worklist() ==
+
+note over gtr
+Triggered in regular intervals and at each process-hook() call.
+end note
+
+gtr -> gtr: process-worklist()
+activate gtr
+
+gtr -> gtr: determine-source-spec()
+activate gtr
+[<-> gtr: retrieve repo infos
+return
+
+gtr -> ttm: new-main-branch-test-task()
+activate ttm
+
+note over ttm
+    add request to work list,
+    call trigger-process-worklist()
+    which instantly returns
+end note
+
+return
+
+
+deactivate gtr
+
+== TestTaskManager.process-worklist() ==
+
+note over ttm
+    Triggered in regular intervals and at each process-hook() call.
+end note
+
+ttm -> ttm: process-worklist()
+activate ttm
+
+'    if status == new
+'        SourceArchiveCreator.create-archive(:$rakudo-repo, :$rakudo-commit-sha, :$nqp-repo, :$nqp-commit-sha, :$moar-repo, :$moar-commit-sha)
+'        $_.new-task() for @test-task-listeners
+'    if status == testing
+'        if all test platforms are done, set to done (this should never happen)
+
+opt status == new
+    ttm -> sac: create-archive()
+    activate sac
+        note over sac
+            Acts on a set of local git repos
+            - Add remotes if they are missing
+            - fetch
+            - checkout requested commits
+            - bundles archive
+        end note
+    return
+    note over ttm: set status = source-archive-created
+end
+opt status == source-archive-created
+
+    ttm -> ocp: new-task()
+    activate ocp
+        note over ocp
+            add item to work list,
+            call trigger-process-worklist()
+            which instantly returns
+        end note
+    return
+
+    ttm -> acp: new-task()
+    activate acp
+        note over acp
+            add item to work list,
+            call trigger-process-worklist()
+            which instantly returns
+        end note
+    return
+
+    note over ttm: set status = waiting-for-test
+
+end
+
+deactivate ttm
+
+== ObsCiPlatform.process-worklist() ==
+
+note over ocp
+Triggered in regular intervals and at each process-hook() call.
+end note
+
+ocp -> ocp: process-worklist()
+activate ocp
+
+]<- ocp: send test requests to OBS
+
+]<-> ocp: retrieve tests in suite from OBS
+
+ocp -> ttm: add-test-suite()
+activate ttm
+
+ttm -> gtr: test-suite-queued()
+activate gtr
+note over gtr: Add item to worklist
+return
+
+return
+
+deactivate ocp
+
+== OBS test status changed ==
+
+[-> cr: notification from OBS
+activate cr
+
+    cr -> ocp: process-hook()
+    activate ocp
+
+        ocp -> ttm: update-test-status()
+        activate ttm
+
+            ttm -> gtr: test-status-changed()
+            activate gtr
+                note over gtr: Add item to worklist
+            return
+            
+            opt all tests are done
+                note over ttm: set status = done
+            end
+
+        return
+
+    return
+
+deactivate cr
+
+@enduml

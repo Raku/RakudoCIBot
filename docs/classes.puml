@@ -1,0 +1,115 @@
+@startuml
+
+class TestTaskManager {
+    register-status-change-listener($change-listener)
+    register-test-task-change-listener($test-task-listener)
+    add-test-suite(:$test-task-id, :$ci-platform-identifier, :@tests)
+    ..
+    trigger-process-worklist()
+    !process-worklist()
+    ..
+    new-pr-test-task(:$project, :$pr-number, :$commit-sha, :$commit-url, :$git-url)
+    new-main-branch-test-task(:$project, :$commit-sha, :$commit-url, :$git-url)
+    ..
+    get-all-test-status-test-tasks()
+    ciplatform-test-task-finished(:$test-task-id)
+    update-test-status(:$test-task-id, :$ci-platform-identifier, :$name)
+}
+
+note top of TestTaskManager
+    Guides the test process. Makes sure
+    no test task is either forgotten or
+    evaluated multiple times.
+end note
+
+note right of TestTaskManager::ciplatform-test-task-finished
+    to be called by a CiPlatform once its test-task is done
+end note
+
+
+class SourceArchiveCreator {
+    create-archive(:$source-spec --> :$source-archive-id)
+}
+
+
+class SourceSpec {
+    has $rakudo-repo
+    has $rakudo-commit-sha
+    has $nqp-repo
+    has $nqp-commit-sha
+    has $moar-repo
+    has $moar-commit-sha
+}
+
+SourceSpec --> SourceArchiveCreator
+
+
+note top of SourceArchiveCreator
+    Creates source archives and provides
+    access to them. Makes sure no source
+    state is created more than once.
+end note
+
+
+interface TestTaskListener {
+    new-task(:$test-task-id, :$source-archive-id)
+}
+
+TestTaskListener --> TestTaskManager
+
+
+interface CiPlatform {
+    !process-new-tasks()
+    !trigger-process-running-tasks()
+    !process-running-tasks()
+}
+CiPlatform --|> TestTaskListener
+
+note top of CiPlatform
+    Each subclass instance corresponds to
+    one CI platform. Queues test tasks on
+    the platform and retrieves results.
+end note
+note right of CiPlatform::trigger-process-running-tasks
+    to be called periodically by a timer
+end note
+
+
+class ObsCiPlatformConnector {
+    process-hook()
+}
+ObsCiPlatformConnector --|> CiPlatform
+
+note top of ObsCiPlatformConnector: Implementation of CiPlatformConnector
+
+
+class AzureCiPlatformConnector {
+    process-hook()
+}
+AzureCiPlatformConnector --|> CiPlatform
+
+note top of AzureCiPlatformConnector: Implementation of CiPlatformConnector
+
+
+interface StatusListener {
+    test-suite-queued(:$test-task-id, :@tests)
+    test-status-changed(:$test-task-id, :$test-name, :$status)
+}
+
+StatusListener --> TestTaskManager
+
+note top of StatusListener
+    Implementers can receive status
+    change events from the `TestTaskManager`
+end note
+
+
+class GitHubTestRequester {
+    new-re-test-command(:$project, :$pr-number, :$comment-id, :$user-url)
+    process-hook(:$request)
+    !determine-source-spec(:$project, :$repo, :$commit-sha --> SourceSpec)
+}
+
+GitHubTestRequester --|> StatusListener
+
+@enduml
