@@ -6,17 +6,19 @@ A `test` is a single test unit in a test suite on a CI platform for a specific t
 
 id
 fk-test-task-id
+creation As Timestamp
+test-started As Timestamp
+test-finished As Timestamp
 ciplatform-identifier
     - azure
     - OBS
 status
     - not-started
-    - in-progess
+    - in-progress
     - success
     - failure
     - aborted
-started-timestamp
-finished-timestamp
+log as text
 
 
 test-task
@@ -25,7 +27,7 @@ test-task
 A test request. Usually corresponds to a commit in the source provider.
 
 id
-creation-timestamp
+creation As Timestamp
 
 project         'moar', 'nqp', 'rakudo'
 git-repo-url    https repo url
@@ -34,7 +36,7 @@ commit-sha
 status
     - new
     - source-archive-created
-    - waiting-for-test
+    - waiting-for-test-results
     - done
     - error
 
@@ -78,7 +80,7 @@ github-command
 ==============
 
 id
-fk-github-prs-id
+fk-github-pr-id
 comment-number
 comment-url    comment url
 command     're-test', 'merge-on-success'
@@ -89,7 +91,7 @@ website-command
 ===============
 
 id
-fk-github-prs-id
+fk-github-pr-id
 command     're-test'
 status      'new', 'done'
 
