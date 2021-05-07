@@ -1,0 +1,11 @@
+use Test;
+use File::Temp;
+use SourceArchiveCreator;
+
+my $repo-store = tempdir().IO;
+
+my $sac = SourceArchiveCreator.new: :$repo-store;
+
+ok $repo-store.add('rakudo/.git').d;
+ok $repo-store.add('nqp/.git').d;
+ok $repo-store.add('MoarVM/.git').d;

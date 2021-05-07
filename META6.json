@@ -11,7 +11,8 @@
       "Base64:ver<0.0.2>"
   ],
   "test-depends": [
-      "Test::SourceFiles"
+      "Test::SourceFiles",
+      "File::Temp"
   ],
   "description": null,
   "license": "Artistic-2.0",
@@ -20,7 +21,8 @@
   "perl": "6.d",
   "provides": {
       "WebService::OBS": "lib/WebService/OBS.rakumod",
-      "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod"
+      "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
+      "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod"
   },
   "resources": [
   ],
