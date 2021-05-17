@@ -2,10 +2,29 @@ use Test;
 use File::Temp;
 use SourceArchiveCreator;
 
-my $repo-store = tempdir().IO;
+my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
+my $store-dir = (%*ENV<RCI_TEST_STORE_DIR> // tempdir()).IO;
 
-my $sac = SourceArchiveCreator.new: :$repo-store;
+my $sac = SourceArchiveCreator.new: :$work-dir, :$store-dir;
 
-ok $repo-store.add('rakudo/.git').d;
-ok $repo-store.add('nqp/.git').d;
-ok $repo-store.add('MoarVM/.git').d;
+ok $work-dir.add('rakudo/.git').d;
+ok $work-dir.add('nqp/.git').d;
+ok $work-dir.add('MoarVM/.git').d;
+
+my SourceArchiveCreator::SourceSpec $spec .= new:
+    rakudo-repo       => 'https://github.com/rakudo/rakudo.git',
+    rakudo-commit-sha => '87d019f0703dae6d901fd01ba3f0dc5ae686ee56',
+    nqp-repo          => 'https://github.com/Raku/nqp.git',
+    nqp-commit-sha    => '3ff1af5daa91557ce222a3de30f79dbccd0c0a52',
+    moar-repo         => 'https://github.com/MoarVM/MoarVM.git',
+    moar-commit-sha   => '684b240e0242afb3e1abd9ae7818b1f50f3ef2bd';
+
+my $id = $sac.create-archive($spec);
+is $id, '87D019F0703DAE6D901FD01BA3F0DC5AE686EE56_3FF1AF5DAA91557CE222A3DE30F79DBCCD0C0A52_684B240E0242AFB3E1ABD9AE7818B1F50F3EF2BD';
+
+my $dir = $store-dir.add('87/87D0');
+
+ok $dir.d;
+ok $dir.add("$id.tar.xz").f; 
+nok $dir.add("$id.tar").f;
+

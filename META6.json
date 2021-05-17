@@ -8,7 +8,8 @@
       "Cro::HTTP:ver<0.8.4>",
       "Cro::WebApp:ver<0.8.4>",
       "LibXML:ver<0.5.15>",
-      "Base64:ver<0.0.2>"
+      "Base64:ver<0.0.2>",
+      "OO::Monitors:ver<1.1.1>"
   ],
   "test-depends": [
       "Test::SourceFiles",
