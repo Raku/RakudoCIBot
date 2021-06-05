@@ -9,7 +9,8 @@
       "Cro::WebApp:ver<0.8.4>",
       "LibXML:ver<0.5.15>",
       "Base64:ver<0.0.2>",
-      "OO::Monitors:ver<1.1.1>"
+      "OO::Monitors:ver<1.1.1>",
+      "Red:ver<0.1.44>"
   ],
   "test-depends": [
       "Test::SourceFiles",
@@ -23,7 +24,8 @@
   "provides": {
       "WebService::OBS": "lib/WebService/OBS.rakumod",
       "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
-      "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod"
+      "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
+      "DB::classes": "lib/DB/classes.rakumod"
   },
   "resources": [
   ],

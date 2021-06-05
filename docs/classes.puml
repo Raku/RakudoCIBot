@@ -1,29 +1,30 @@
 @startuml
 
-class TestTaskManager {
-    register-status-change-listener($change-listener)
-    register-test-task-change-listener($test-task-listener)
-    add-test-suite(:$test-task-id, :$ci-platform-identifier, :@tests)
+class TestSetManager {
+    register-status-listener($status-listener)
+    register-test-set-listener($test-set-listener)
+    add-test-suite(:$test-set-id, :$ci-platform-identifier, :@tests)
     ..
     trigger-process-worklist()
     !process-worklist()
     ..
-    new-pr-test-task(:$project, :$pr-number, :$commit-sha, :$commit-url, :$git-url)
-    new-main-branch-test-task(:$project, :$commit-sha, :$commit-url, :$git-url)
+    new-pr-test-set(:$project, :$pr-number, :$commit-sha, :$commit-url, :$git-url)
+    new-main-branch-test-set(:$project, :$commit-sha, :$commit-url, :$git-url)
     ..
-    get-all-test-status-test-tasks()
-    ciplatform-test-task-finished(:$test-task-id)
-    update-test-status(:$test-task-id, :$ci-platform-identifier, :$name)
+    get-all-test-status-test-sets()
+    ciplatform-tests-finished(:$test-set-id)
+    update-test-status(:$test-set-id, :$ci-platform-identifier, :$test-id)
 }
 
-note top of TestTaskManager
+note top of TestSetManager
     Guides the test process. Makes sure
-    no test task is either forgotten or
+    no test set is either forgotten or
     evaluated multiple times.
 end note
 
-note right of TestTaskManager::ciplatform-test-task-finished
-    to be called by a CiPlatform once its test-task is done
+note right of TestSetManager::ciplatform-tests-finished
+    to be called by a CiPlatform once its tests for a test set
+    are all done
 end note
 
 
@@ -51,26 +52,26 @@ note top of SourceArchiveCreator
 end note
 
 
-interface TestTaskListener {
-    new-task(:$test-task-id, :$source-archive-id)
+interface TestSetListener {
+    new-test-set(:$test-set-id, :$source-archive-id)
 }
 
-TestTaskListener --> TestTaskManager
+TestSetListener --> TestSetManager
 
 
 interface CiPlatform {
-    !process-new-tasks()
-    !trigger-process-running-tasks()
-    !process-running-tasks()
+    !process-new-tests()
+    !trigger-process-running-tests()
+    !process-running-tests()
 }
-CiPlatform --|> TestTaskListener
+CiPlatform --|> TestSetListener
 
 note top of CiPlatform
     Each subclass instance corresponds to
-    one CI platform. Queues test tasks on
+    one CI platform. Queues tests on
     the platform and retrieves results.
 end note
-note right of CiPlatform::trigger-process-running-tasks
+note right of CiPlatform::trigger-process-running-tests
     to be called periodically by a timer
 end note
 
@@ -92,24 +93,24 @@ note top of AzureCiPlatformConnector: Implementation of CiPlatformConnector
 
 
 interface StatusListener {
-    test-suite-queued(:$test-task-id, :@tests)
-    test-status-changed(:$test-task-id, :$test-name, :$status)
+    tests-queued(:$test-set-id, :@tests)
+    test-status-changed(:$test-set-id, :$test-id, :$status)
 }
 
-StatusListener --> TestTaskManager
+StatusListener --> TestSetManager
 
 note top of StatusListener
     Implementers can receive status
-    change events from the `TestTaskManager`
+    change events from the `TestSetManager`
 end note
 
 
-class GitHubTestRequester {
+class GithubTestRequester {
     new-re-test-command(:$project, :$pr-number, :$comment-id, :$user-url)
     process-hook(:$request)
     !determine-source-spec(:$project, :$repo, :$commit-sha --> SourceSpec)
 }
 
-GitHubTestRequester --|> StatusListener
+GithubTestRequester --|> StatusListener
 
 @enduml

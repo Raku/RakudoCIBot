@@ -1,7 +1,7 @@
 @startuml
 participant CroRouter            As cr
 participant GitHubTestRequester  As gtr
-participant TestTaskManager      As ttm
+participant TestSetManager       As tsm
 participant SourceArchiveCreator As sac
 participant AzureCiPlatform      As acp
 participant ObsCiPlatform        As ocp
@@ -38,10 +38,10 @@ activate gtr
 [<-> gtr: retrieve repo infos
 return
 
-gtr -> ttm: new-main-branch-test-task()
-activate ttm
+gtr -> tsm: new-main-branch-test-set()
+activate tsm
 
-note over ttm
+note over tsm
     add request to work list,
     call trigger-process-worklist()
     which instantly returns
@@ -52,23 +52,17 @@ return
 
 deactivate gtr
 
-== TestTaskManager.process-worklist() ==
+== TestSetManager.process-worklist() ==
 
-note over ttm
+note over tsm
     Triggered in regular intervals and at each process-hook() call.
 end note
 
-ttm -> ttm: process-worklist()
-activate ttm
-
-'    if status == new
-'        SourceArchiveCreator.create-archive(:$rakudo-repo, :$rakudo-commit-sha, :$nqp-repo, :$nqp-commit-sha, :$moar-repo, :$moar-commit-sha)
-'        $_.new-task() for @test-task-listeners
-'    if status == testing
-'        if all test platforms are done, set to done (this should never happen)
+tsm -> tsm: process-worklist()
+activate tsm
 
 opt status == new
-    ttm -> sac: create-archive()
+    tsm -> sac: create-archive()
     activate sac
         note over sac
             Acts on a set of local git repos
@@ -78,11 +72,11 @@ opt status == new
             - bundles archive
         end note
     return
-    note over ttm: set status = source-archive-created
+    note over tsm: set status = source-archive-created
 end
 opt status == source-archive-created
 
-    ttm -> ocp: new-task()
+    tsm -> ocp: new-test-set()
     activate ocp
         note over ocp
             add item to work list,
@@ -91,7 +85,7 @@ opt status == source-archive-created
         end note
     return
 
-    ttm -> acp: new-task()
+    tsm -> acp: new-test-set()
     activate acp
         note over acp
             add item to work list,
@@ -100,11 +94,11 @@ opt status == source-archive-created
         end note
     return
 
-    note over ttm: set status = waiting-for-test
+    note over tsm: set status = waiting-for-test
 
 end
 
-deactivate ttm
+deactivate tsm
 
 == ObsCiPlatform.process-worklist() ==
 
@@ -119,10 +113,10 @@ activate ocp
 
 ]<-> ocp: retrieve tests in suite from OBS
 
-ocp -> ttm: add-test-suite()
-activate ttm
+ocp -> tsm: add-test-suite()
+activate tsm
 
-ttm -> gtr: test-suite-queued()
+tsm -> gtr: test-suite-queued()
 activate gtr
 note over gtr: Add item to worklist
 return
@@ -139,16 +133,16 @@ activate cr
     cr -> ocp: process-hook()
     activate ocp
 
-        ocp -> ttm: update-test-status()
-        activate ttm
+        ocp -> tsm: update-test-status()
+        activate tsm
 
-            ttm -> gtr: test-status-changed()
+            tsm -> gtr: test-status-changed()
             activate gtr
                 note over gtr: Add item to worklist
             return
             
             opt all tests are done
-                note over ttm: set status = done
+                note over tsm: set status = done
             end
 
         return

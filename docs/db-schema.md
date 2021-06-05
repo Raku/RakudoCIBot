@@ -1,11 +1,11 @@
-test-task-unit
-==============
+test
+====
 
 The smallest unit a status is reported for.
-A `test` is a single test unit in a test suite on a CI platform for a specific test task.
+A `test` is a single test in a test suite on a CI platform for a specific test set.
 
 id
-fk-test-task-id
+fk-test-set-id
 creation As Timestamp
 test-started As Timestamp
 test-finished As Timestamp
@@ -21,8 +21,8 @@ status
 log as text
 
 
-test-task
-=========
+test-set
+========
 
 A test request. Usually corresponds to a commit in the source provider.
 
@@ -62,7 +62,7 @@ event-type         'pr', 'command', 'main-branch'
 fk-github-prs-id
 fk-github-command-id
 commit-url
-test-task-id
+test-set-id
 
 
 github-pr
