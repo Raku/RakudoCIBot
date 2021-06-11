@@ -1,0 +1,92 @@
+use Test;
+use Test::Mock;
+
+use SourceArchiveCreator;
+use CITestStatusListener;
+use CITestSetManager;
+use DB;
+use Red:api<2> <refreshable>;
+
+# Fast, in memory, ephemeral DB.
+red-defaults("SQLite");
+DB::create-db();
+
+
+### Mocks
+# cp = CI platform
+class TestCIPlatform {
+    has $.test-set-id;
+    has $.source-archive-id;
+    method new-test-set(:$!test-set-id, :$!source-archive-id) {}
+}
+
+class TestCITestStatusListener does CITestStatusListener {
+    has @.new-tests;
+    has @.changed-tests;
+    method tests-queued(@tests) {
+        @!new-tests.append: @tests;
+    }
+
+    method test-status-changed($test) {
+        @!changed-tests.append: $test;
+    }
+}
+
+my $dummy-id = "some dummy id";
+
+class TestSourceArchiveCreator {
+    method create-archive(SourceSpec $source-spec --> Str) {
+        return $dummy-id;
+    }
+}
+
+my $cp = TestCIPlatform.new;
+my $sac = TestSourceArchiveCreator.new;
+# gh = Github
+my $gh = TestCITestStatusListener.new;
+
+my CITestSetManager $tsm .= new:
+    source-archive-creator => $sac,
+;
+
+### Register the listeners
+$tsm.register-test-set-listener: $cp;
+$tsm.register-status-listener: $gh;
+
+
+### Testing starts here
+my SourceSpec $source-spec .= new:
+    rakudo-repo       => 'rakudo/rakudo',
+    rakudo-commit-sha => '0123456789012345678901234567890123456789',
+    nqp-repo          => 'Raku/nqp',
+    nqp-commit-sha    => '0123456789012345678901234567890123456789',
+    moar-repo         => 'MoarVM/MoarVM',
+    moar-commit-sha   => '0123456789012345678901234567890123456789',
+;
+
+### Adding a new test set
+my $test-set = DB::CITestSet.new:
+    event-type => DB::MAIN_BRANCH,
+    project => DB::RAKUDO,
+    commit-sha => '0123456789012345678901234567890123456789',
+;
+dd $test-set;
+$test-set.^create;
+
+$tsm.add-test-set(:$test-set, :$source-spec);
+$test-set.^refresh;
+is $test-set.status, DB::NEW, "TestSet was processed";
+is $cp.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
+ok $cp.test-set-id, "Adding a test set notifies the CI platforms";
+
+### Adding test suites
+my $test = DB::CITest.new;
+$tsm.add-tests($test);
+is $gh.new-tests.elems, 1, "New tests are forwarded to the Status listeners";
+is $gh.new-tests[0], $test, "New tests are forwarded to the Status listeners";
+
+### Updating test status
+$tsm.test-status-updated($test);
+is $gh.changed-tests.elems, 1, "Status updates are forwarded to the status listeners";
+is $gh.changed-tests[0], $test, "Status updates are forwarded to the status listeners";
+

@@ -1,6 +1,38 @@
 use OO::Monitors;
 
-unit monitor SourceArchiveCreator;
+class SourceSpec {
+    # A Git SHA-1 is a length 40 hex number
+    subset SHA1 of Str where m:i/ <[0..9a..f]> ** 40 /;
+
+    has Str $.rakudo-repo is required;
+    has SHA1 $.rakudo-commit-sha is required;
+    has Str $.nqp-repo is required;
+    has SHA1 $.nqp-commit-sha is required;
+    has Str $.moar-repo is required;
+    has SHA1 $.moar-commit-sha is required;
+    
+    submethod TWEAK() {
+        $!rakudo-commit-sha .= uc;
+        $!nqp-commit-sha .= uc;
+        $!moar-commit-sha .= uc;
+    }
+}
+
+class X::ArchiveCreationException is Exception {
+    has $.command;
+    has $.exitcode;
+    has $.output;
+
+    multi method message() {
+        "Command: '$!command' failed with code: $!exitcode. Output was: '$!output'";
+    }
+
+    method gist() {
+        "Command: '$!command' failed with code: $!exitcode. Output was: '$!output'";
+    }
+}
+
+monitor SourceArchiveCreator {
 
 #`[
 =head1 Compression algorithms
@@ -27,24 +59,6 @@ size                      6.3 MB
 
 We'll go with xz for now.
 ]
-
-class SourceSpec {
-    # A Git SHA-1 is a length 40 hex number
-    subset SHA1 of Str where m:i/ <[0..9a..f]> ** 40 /;
-
-    has Str $.rakudo-repo is required;
-    has SHA1 $.rakudo-commit-sha is required;
-    has Str $.nqp-repo is required;
-    has SHA1 $.nqp-commit-sha is required;
-    has Str $.moar-repo is required;
-    has SHA1 $.moar-commit-sha is required;
-    
-    submethod TWEAK() {
-        $!rakudo-commit-sha .= uc;
-        $!nqp-commit-sha .= uc;
-        $!moar-commit-sha .= uc;
-    }
-}
 
 class X::ArchiveCreationException is Exception {
     has $.command;
@@ -128,4 +142,4 @@ method create-archive(SourceSpec $source-spec --> Str) {
     return $id;
 }
 
-
+}

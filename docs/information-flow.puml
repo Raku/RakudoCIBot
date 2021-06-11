@@ -1,10 +1,10 @@
 @startuml
-participant CroRouter            As cr
-participant GitHubTestRequester  As gtr
-participant TestSetManager       As tsm
-participant SourceArchiveCreator As sac
-participant AzureCiPlatform      As acp
-participant ObsCiPlatform        As ocp
+participant CroRouter             As cr
+participant GitHubCITestRequester As gtr
+participant CITestSetManager      As tsm
+participant SourceArchiveCreator  As sac
+participant AzureCiPlatform       As acp
+participant ObsCiPlatform         As ocp
 
 == New Commit ==
 
@@ -24,7 +24,7 @@ return
 
 deactivate cr
 
-== GitHubTestRequester.process-worklist() ==
+== GitHubCITestRequester.process-worklist() ==
 
 note over gtr
 Triggered in regular intervals and at each process-hook() call.
@@ -52,7 +52,7 @@ return
 
 deactivate gtr
 
-== TestSetManager.process-worklist() ==
+== CITestSetManager.process-worklist() ==
 
 note over tsm
     Triggered in regular intervals and at each process-hook() call.
