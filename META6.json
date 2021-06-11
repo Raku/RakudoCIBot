@@ -26,6 +26,7 @@
       "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
       "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
       "DB::classes": "lib/DB/classes.rakumod"
+      "SerialDedup": "lib/SerialDedup.rakumod"
   },
   "resources": [
   ],

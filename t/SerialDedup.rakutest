@@ -1,0 +1,26 @@
+use Test;
+use SerialDedup;
+
+my class A {
+    has $.callcount = 0;
+    method m() is serial-dedup {
+        $!callcount++;
+        sleep 0.1;
+    }
+}
+
+
+my A $a .= new;
+is $a.callcount, 0, 'Not implicitly called';
+$a.m;
+sleep 0.2;
+is $a.callcount, 1, 'Called when called explicitly';
+
+$a.m;
+$a.m;
+$a.m;
+sleep 0.5;
+is $a.callcount, 3, "Colliding calls don't stack up";
+
+done-testing;
+
