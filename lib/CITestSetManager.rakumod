@@ -2,6 +2,7 @@ unit class CITestSetManager;
 use SerialDedup;
 use DB;
 use SourceArchiveCreator;
+use Red::Operators:api<2>;
 
 
 has SetHash $!status-listeners .= new;
@@ -38,8 +39,8 @@ method process-worklist() is serial-dedup {
                 }
             }
             when DB::SOURCE_ARCHIVE_CREATED {
-                for $!test-set-listeners {
-                    $_.new-test-set($test-set)
+                for $!test-set-listeners.keys {
+                    $_.new-test-set(:$test-set)
                 }
                 $test-set.status = DB::WAITING_FOR_TEST_RESULTS;
                 $test-set.^save;
@@ -58,14 +59,14 @@ method add-test-set(:$test-set, :$source-spec) {
     self.process-worklist;
 }
 
-method add-tests(@tests) {
-    for $!status-listeners {
+method add-tests(*@tests) {
+    for $!status-listeners.keys {
         $_.tests-queued(@tests)
     }
 }
 
 method test-status-updated($test) {
-    for $!status-listeners {
+    for $!status-listeners.keys {
         $_.test-status-changed($test)
     }
 }

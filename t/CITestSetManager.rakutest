@@ -5,19 +5,18 @@ use SourceArchiveCreator;
 use CITestStatusListener;
 use CITestSetManager;
 use DB;
-use Red:api<2> <refreshable>;
+use Red:api<2>;
 
 # Fast, in memory, ephemeral DB.
 red-defaults("SQLite");
 DB::create-db();
-
+#my $*RED-DEBUG = True;
 
 ### Mocks
 # cp = CI platform
 class TestCIPlatform {
-    has $.test-set-id;
-    has $.source-archive-id;
-    method new-test-set(:$!test-set-id, :$!source-archive-id) {}
+    has $.test-set;
+    method new-test-set(:$!test-set) {}
 }
 
 class TestCITestStatusListener does CITestStatusListener {
@@ -72,11 +71,14 @@ my $test-set = DB::CITestSet.^create:
 ;
 
 $tsm.add-test-set(:$test-set, :$source-spec);
-#$test-set.^refresh;
-$test-set = DB::CITestSet.^all.grep( *.id == $test-set.id )[0];
-is $test-set.status, DB::NEW, "TestSet was processed";
-is $cp.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
-ok $cp.test-set-id, "Adding a test set notifies the CI platforms";
+sleep 1;
+
+#$test-set = DB::CITestSet.^all.grep( *.id == $test-set.id )[0];
+$test-set.^refresh;
+
+is $test-set.status, DB::WAITING_FOR_TEST_RESULTS, "TestSet was processed";
+ok $cp.test-set, "Adding a test set notifies the CI platforms";
+is $cp.test-set.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
 
 ### Adding test suites
 my $test = DB::CITest.new;

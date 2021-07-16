@@ -1,4 +1,4 @@
-use Red:api<2>;
+use Red:api<2> <refreshable>;
 use SourceArchiveCreator;
 
 unit module DB;
