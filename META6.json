@@ -31,6 +31,10 @@
       "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
       "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
       "DB": "lib/DB.rakumod",
+      "DB::CITest": "lib/DB.rakumod",
+      "DB::CITestSet": "lib/DB.rakumod",
+      "DB::GitHubPR": "lib/DB.rakumod",
+      "DB::Command": "lib/DB.rakumod",
       "SerialDedup": "lib/SerialDedup.rakumod"
   },
   "resources": [

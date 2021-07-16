@@ -65,16 +65,15 @@ my SourceSpec $source-spec .= new:
 ;
 
 ### Adding a new test set
-my $test-set = DB::CITestSet.new:
+my $test-set = DB::CITestSet.^create:
     event-type => DB::MAIN_BRANCH,
     project => DB::RAKUDO,
     commit-sha => '0123456789012345678901234567890123456789',
 ;
-dd $test-set;
-$test-set.^create;
 
 $tsm.add-test-set(:$test-set, :$source-spec);
-$test-set.^refresh;
+#$test-set.^refresh;
+$test-set = DB::CITestSet.^all.grep( *.id == $test-set.id )[0];
 is $test-set.status, DB::NEW, "TestSet was processed";
 is $cp.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
 ok $cp.test-set-id, "Adding a test set notifies the CI platforms";

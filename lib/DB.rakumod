@@ -35,7 +35,7 @@ enum CITestSetError <
     SOURCE_IS_GONE
 >;
 
-enum GithubEventType <
+enum GitHubEventType <
     PR
     COMMAND
     MAIN_BRANCH
@@ -58,7 +58,7 @@ enum CommandStatus <
 
 model CITestSet { ... }
 model CITest { ... }
-model GithubPR { ... }
+model GitHubPR { ... }
 model Command { ... }
 
 model CITest is rw is table<citest> {
@@ -77,18 +77,18 @@ model CITestSet is rw is table<citest_set> {
     has UInt                $.id           is serial;
     has DateTime            $.creation     is column .= now;
 
-    # Responsibility of the GithubCITestRequester
-        has DB::GithubEventType $.event-type               is column;
+    # Responsibility of the GitHubCITestRequester
+        has DB::GitHubEventType $.event-type               is column;
 
         has DB::Project         $.project                  is column;
         has Str                 $.commit-sha               is column;
 
         # If this test request was caused by a PR or new commit therein.
-        has UInt                $!fk-pr                    is referencing( *.id, :model(DB::GithubPR) );
-        has DB::GithubPR        $.pr                       is relationship( *.fk-pr );
+        has UInt                $!fk-pr                    is referencing( :nullable, *.id, :model(DB::GitHubPR) );
+        has DB::GitHubPR        $.pr                       is relationship( *.fk-pr );
 
         # If this test request was caused by a command.
-        has UInt                $!fk-command               is referencing( *.id, :model(DB::Command) );
+        has UInt                $!fk-command               is referencing( :nullable, *.id, :model(DB::Command) );
         has DB::Command         $.command                  is relationship( *.fk-command );
 
     # Responsibility of the CITestSetManager
@@ -108,8 +108,8 @@ model CITestSet is rw is table<citest_set> {
         has DB::CITest          @.tests                    is relationship( *.fk-test-set );
 
         method source-spec() is rw {
-            Proxy.new(
-                FETCH => method () {
+            return-rw Proxy.new(
+                FETCH => sub ($) {
                     SourceSpec.new(
                         :$!rakudo-repo,
                         :$!rakudo-commit-sha,
@@ -119,7 +119,7 @@ model CITestSet is rw is table<citest_set> {
                         :$!moar-commit-sha,
                     )
                 },
-                STORE => method ($spec) {
+                STORE => sub ($, $spec) {
                     $!rakudo-repo       = $spec.rakudo-repo;
                     $!rakudo-commit-sha = $spec.rakudo-commit-sha;
                     $!nqp-repo          = $spec.nqp-repo;
@@ -131,7 +131,7 @@ model CITestSet is rw is table<citest_set> {
         }
 }
 
-model GithubPR is rw is table<github_pr> {
+model GitHubPR is rw is table<github_pr> {
     has UInt          $.id        is serial;
     has DateTime      $.creation  is column .= now;
     has UInt          $.number    is column;
@@ -144,16 +144,16 @@ model GithubPR is rw is table<github_pr> {
 }
 
 #`[
-    A command. Either triggered via a comment in a Github PR or via the
+    A command. Either triggered via a comment in a GitHub PR or via the
     website.
   ]
 model Command is rw is table<command> {
     has UInt              $.id             is serial;
     has DateTime          $.creation       is column .= now;
 
-    # If triggered via a Github PR
-    has UInt              $!fk-pr          is referencing( *.id, :model(DB::GithubPR) );
-    has DB::GithubPR      $.pr             is relationship( *.fk-pr );
+    # If triggered via a GitHub PR
+    has UInt              $!fk-pr          is referencing( *.id, :model(DB::GitHubPR) );
+    has DB::GitHubPR      $.pr             is relationship( *.fk-pr );
     has Str               $.comment-number is column;
     has Str               $.comment-url    is column;
 
@@ -169,5 +169,5 @@ model Command is rw is table<command> {
 }
 
 our sub create-db() {
-    schema(DB::CITest, DB::CITestSet, DB::GithubPR, DB::Command).create;
+    schema(DB::CITest, DB::CITestSet, DB::GitHubPR, DB::Command).create;
 }
