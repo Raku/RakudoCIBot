@@ -2,14 +2,14 @@ use OO::Monitors;
 
 class SourceSpec {
     # A Git SHA-1 is a length 40 hex number
-    subset SHA1 of Str where m:i/ <[0..9a..f]> ** 40 /;
+    subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest /;
 
-    has Str $.rakudo-repo is required;
-    has SHA1 $.rakudo-commit-sha is required;
-    has Str $.nqp-repo is required;
-    has SHA1 $.nqp-commit-sha is required;
-    has Str $.moar-repo is required;
-    has SHA1 $.moar-commit-sha is required;
+    has Str $.rakudo-repo = 'rakudo/rakudo';
+    has SHA1 $.rakudo-commit-sha = 'latest';
+    has Str $.nqp-repo = 'Raku/nqp';
+    has SHA1 $.nqp-commit-sha = 'latest';
+    has Str $.moar-repo = 'MoarVM/MoarVM';
+    has SHA1 $.moar-commit-sha = 'latest';
     
     submethod TWEAK() {
         $!rakudo-commit-sha .= uc;
@@ -121,7 +121,10 @@ method create-archive(SourceSpec $source-spec --> Str) {
         validate run qw|git fetch foobar|,
             :cwd($repo-dir), :merge;
 
-        validate run qw|git reset --hard|, $commit,
+        # TODO no hard coded master branch.
+        my $to-use = $commit eq 'latest' ?? 'origin/master' !! $commit;
+
+        validate run qw|git reset --hard|, $to-use,
             :cwd($repo-dir), :merge;
     }
 

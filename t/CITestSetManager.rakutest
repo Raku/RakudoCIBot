@@ -4,6 +4,8 @@ use Test::Mock;
 use SourceArchiveCreator;
 use CITestStatusListener;
 use CITestSetManager;
+use GitHubCITestRequester;
+use GitHubInterface;
 use DB;
 use Red:api<2>;
 
@@ -31,6 +33,8 @@ class TestCITestStatusListener does CITestStatusListener {
     }
 }
 
+my $github-interface = mocked(GitHubInterface);
+
 my $dummy-id = "some dummy id";
 
 class TestSourceArchiveCreator {
@@ -42,52 +46,44 @@ class TestSourceArchiveCreator {
 my $cp = TestCIPlatform.new;
 my $sac = TestSourceArchiveCreator.new;
 # gh = Github
-my $gh = TestCITestStatusListener.new;
+my $gh-listener = TestCITestStatusListener.new;
 
 my CITestSetManager $tsm .= new:
-    source-archive-creator => $sac,
-;
+    source-archive-creator => $sac;
 
 ### Register the listeners
 $tsm.register-test-set-listener: $cp;
-$tsm.register-status-listener: $gh;
+$tsm.register-status-listener: $gh-listener;
+
+my GitHubCITestRequester $gh .= new:
+    testset-manager => $tsm,
+    :$github-interface;
+
 
 
 ### Testing starts here
-my SourceSpec $source-spec .= new:
-    rakudo-repo       => 'rakudo/rakudo',
-    rakudo-commit-sha => '0123456789012345678901234567890123456789',
-    nqp-repo          => 'Raku/nqp',
-    nqp-commit-sha    => '0123456789012345678901234567890123456789',
-    moar-repo         => 'MoarVM/MoarVM',
-    moar-commit-sha   => '0123456789012345678901234567890123456789',
-;
 
 ### Adding a new test set
-my $test-set = DB::CITestSet.^create:
-    event-type => DB::MAIN_BRANCH,
-    project => DB::RAKUDO,
-    commit-sha => '0123456789012345678901234567890123456789',
-;
+$gh.new-main-commit(
+    repo => "rakudo/rakudo",
+    branch => "master",
+    commit-sha => "0123456789012345678901234567890123456789",
+    user-url => "https://github.com/patrickbkr/GitHub-API-Testing/commit/1182b59facb4e86c591d691ed5a3f4b95433577b");
 
-$tsm.add-test-set(:$test-set, :$source-spec);
 sleep 1;
 
-#$test-set = DB::CITestSet.^all.grep( *.id == $test-set.id )[0];
-$test-set.^refresh;
-
-is $test-set.status, DB::WAITING_FOR_TEST_RESULTS, "TestSet was processed";
 ok $cp.test-set, "Adding a test set notifies the CI platforms";
 is $cp.test-set.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
 
 ### Adding test suites
 my $test = DB::CITest.new;
 $tsm.add-tests($test);
-is $gh.new-tests.elems, 1, "New tests are forwarded to the Status listeners";
-is $gh.new-tests[0], $test, "New tests are forwarded to the Status listeners";
+is $gh-listener.new-tests.elems, 1, "New tests are forwarded to the Status listeners";
+is $gh-listener.new-tests[0], $test, "New tests are forwarded to the Status listeners";
 
 ### Updating test status
 $tsm.test-status-updated($test);
-is $gh.changed-tests.elems, 1, "Status updates are forwarded to the status listeners";
-is $gh.changed-tests[0], $test, "Status updates are forwarded to the status listeners";
+is $gh-listener.changed-tests.elems, 1, "Status updates are forwarded to the status listeners";
+is $gh-listener.changed-tests[0], $test, "Status updates are forwarded to the status listeners";
 
+done-testing;

@@ -15,7 +15,7 @@ my Cro::Service $http = Cro::HTTP::Server.new(
     http => <1.1>,
     host => $hook-host,
     port => $hook-port,
-    application => routes($github-pat),
+    application => routes(),
     after => [
         Cro::HTTP::Log::File.new(logs => $*OUT, errors => $*ERR)
     ]

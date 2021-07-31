@@ -1,6 +1,6 @@
 use Cro::HTTP::Router;
 
-sub routes($gh-pat) is export {
+sub routes() is export {
     route {
         post -> 'github-hook', :$X-Github-Event! is header where 'pull_request' {
             request-body -> %json {
@@ -16,6 +16,13 @@ sub routes($gh-pat) is export {
             request-body -> %json {
                 if %json<issue><pull_request>:exists {
                     content 'text/txt', 'Hi GitHub PR comment';
+                }
+            }
+        }
+        post -> 'github-hook', :$X-Github-Event! is header where 'push' {
+            request-body -> %json {
+                if %json<head_commit><message>:exists {
+                    content 'text/txt', 'Hi GitHub commit';
                 }
             }
         }

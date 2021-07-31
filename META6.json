@@ -10,13 +10,16 @@
       "LibXML:ver<0.5.15>",
       "Base64:ver<0.0.2>",
       "OO::Monitors:ver<1.1.1>",
-      "Red:ver<0.1.44>"
+      "Red:ver<0.1.44>",
+      "Log::Async:ver<0.0.7>"
   ],
   "test-depends": [
       "Test::SourceFiles",
       "File::Temp",
       "Test::Mock",
-      "Test::Scheduler"
+      "Test::Scheduler",
+      "Cro::HTTP::Test",
+      "JSON::Fast"
   ],
   "description": null,
   "license": "Artistic-2.0",
@@ -24,12 +27,15 @@
   "name": "RakuCIBot",
   "perl": "6.d",
   "provides": {
+      "Routes": "lib/Routes.rakumod",
       "CITestSetManager": "lib/CITestSetManager.rakumod",
       "CITestSetListener": "lib/CITestSetListener.rakumod",
       "CITestStatusListener": "lib/CITestStatusListener.rakumod",
       "WebService::OBS": "lib/WebService/OBS.rakumod",
       "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
       "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
+      "GitHubCITestRequester": "lib/GitHubCITestRequester.rakumod",
+      "GitHubInterface": "lib/GitHubInterface.rakumod",
       "DB": "lib/DB.rakumod",
       "DB::CITest": "lib/DB.rakumod",
       "DB::CITestSet": "lib/DB.rakumod",

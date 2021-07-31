@@ -1,0 +1,59 @@
+use Test;
+use Test::Mock;
+use JSON::Fast;
+
+use GitHubInterface;
+use GitHubCITestRequester;
+
+my $data-dir = $*PROGRAM.parent.add('data');
+
+my $processor = mocked(GitHubCITestRequester);
+
+my GitHubInterface $parser .= new(:$processor);
+
+$parser.parse-request('push', from-json $data-dir.add("webhook-github-commit.body").slurp);
+check-mock($processor,
+    *.called('new-commit', times => 1, with => \(
+        repo => "patrickbkr/GitHub-API-Testing",
+        commit-sha => "1182b59facb4e86c591d691ed5a3f4b95433577b",
+        user-url => "https://github.com/patrickbkr/GitHub-API-Testing/commit/1182b59facb4e86c591d691ed5a3f4b95433577b",
+    )),
+);
+
+$parser.parse-request('pull_request', from-json $data-dir.add("webhook-github-create-pull.body").slurp);
+check-mock($processor,
+    *.called('new-pr', times => 1, with => \(
+    pr-number => 3,
+        user-url => "https://api.github.com/repos/patrickbkr/GitHub-API-Testing/pulls/3",
+        body => "Some description.",
+        to-repo => "patrickbkr/GitHub-API-Testing",
+        to-branch => "main",
+        from-repo => "patrickbkr/GitHub-API-Testing",
+        from-branch => "feature-branch-1",
+    )),
+);
+
+$parser.parse-request('issue_comment', from-json $data-dir.add("webhook-github-issue-comment.body").slurp);
+check-mock($processor,
+    *.called('new-pr-comment', times => 1, with => \(
+        pr-number => 3,
+        repo => "patrickbkr/GitHub-API-Testing",
+        pr-number => 3,
+        comment-id => 889964433,
+        comment-text => "This is fine.",
+        user-url => "https://github.com/patrickbkr/GitHub-API-Testing/pull/3#issuecomment-889964433",
+    )),
+);
+
+$parser.parse-request('commit_comment', from-json $data-dir.add("webhook-github-commit-comment.body").slurp);
+check-mock($processor,
+    *.called('new-commit-comment', times => 1, with => \(
+        repo => "patrickbkr/GitHub-API-Testing",
+        commit-sha => "1182b59facb4e86c591d691ed5a3f4b95433577b",
+        comment-id => 54200766,
+        comment-text => "Is this a good idea?",
+        user-url => "https://github.com/patrickbkr/GitHub-API-Testing/commit/1182b59facb4e86c591d691ed5a3f4b95433577b#commitcomment-54200766",
+    )),
+);
+
+done-testing;

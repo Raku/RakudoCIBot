@@ -20,10 +20,10 @@ method register-test-set-listener($test-set-listener) {
 
 method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(
-      *.status ⊂ (DB::NEW, DB::SOURCE_ARCHIVE_CREATED, DB::WAITING_FOR_TEST_RESULTS))
+      *.status ⊂ (DB::UNPROCESSED, DB::SOURCE_ARCHIVE_CREATED, DB::WAITING_FOR_TEST_RESULTS))
       -> $test-set {
         given $test-set.status {
-            when DB::NEW {
+            when DB::UNPROCESSED {
                 my $id = $!source-archive-creator.create-archive($test-set.source-spec);
                 $test-set.source-archive-id = $id;
                 $test-set.status = DB::SOURCE_ARCHIVE_CREATED;
@@ -53,7 +53,7 @@ method process-worklist() is serial-dedup {
 }
 
 method add-test-set(:$test-set, :$source-spec) {
-    $test-set.status = DB::NEW;
+    $test-set.status = DB::UNPROCESSED;
     $test-set.source-spec = $source-spec;
     $test-set.^save;
     self.process-worklist;

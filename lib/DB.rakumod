@@ -22,18 +22,18 @@ enum Project <
     RAKUDO
 >;
 
-enum CITestSetStatus <
-    GITHUB
-    NEW
-    SOURCE_ARCHIVE_CREATED
-    WAITING_FOR_TEST_RESULTS
-    DONE
-    ERROR
->;
+enum CITestSetStatus (
+    "NEW",                      # As created by the GitHubCITestRequester. SourceSpec has not been created yet.
+    "UNPROCESSED",              # SourceSpec has been created. Now to be processed by the CITestSetManager
+    "SOURCE_ARCHIVE_CREATED",   # An archive file with the sources to test has been created.
+    "WAITING_FOR_TEST_RESULTS", # CI platforms have been informed of new tests. Now waiting for results.
+    "DONE",                     # All tests are done, completion has been signalled back to GitHub.
+    "ERROR"                     # Some unrecoverable error has occurred.
+);
 
-enum CITestSetError <
-    SOURCE_IS_GONE
->;
+enum CITestSetError (
+    "SOURCE_IS_GONE" # Even after retries we failed to retrieve the sources of a test request.
+);
 
 enum GitHubEventType <
     PR
@@ -81,6 +81,8 @@ model CITestSet is rw is table<citest_set> {
         has DB::GitHubEventType $.event-type               is column;
 
         has DB::Project         $.project                  is column;
+
+        has Str                 $.repo                     is column;
         has Str                 $.commit-sha               is column;
 
         # If this test request was caused by a PR or new commit therein.
@@ -92,7 +94,7 @@ model CITestSet is rw is table<citest_set> {
         has DB::Command         $.command                  is relationship( *.fk-command );
 
     # Responsibility of the CITestSetManager
-        has DB::CITestSetStatus $.status                   is column = GITHUB;
+        has DB::CITestSetStatus $.status                   is column = NEW;
         has DB::CITestSetError  $.error                    is column{ :nullable };
 
         has Str                 $!rakudo-repo              is column{ :nullable }; # e.g. 'rakudo/rakudo'
@@ -138,6 +140,7 @@ model GitHubPR is rw is table<github_pr> {
     has DB::Project   $.project   is column;
     has Str           $.web-url   is column;
     has Str           $.repo      is column;
+    has Str           $.branch    is column;
     has DB::PRStatus  $.status    is column;
 
     has DB::CITestSet @.test-sets is relationship( *.fk-pr );
