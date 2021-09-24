@@ -22,5 +22,19 @@ $a.m;
 sleep 0.5;
 is $a.callcount, 3, "Colliding calls don't stack up";
 
+{
+    my $*SERIAL_DEDUP_NO_THREADING = True;
+    $a.m;
+    $a.m;
+    $a.m;
+    is $a.callcount, 6, "Disabling instant return dynamically";
+}
+
+$a.m;
+$a.m;
+$a.m;
+sleep 0.5;
+is $a.callcount, 8, "Normal behavior after unsetting the no threading dyn var";
+
 done-testing;
 

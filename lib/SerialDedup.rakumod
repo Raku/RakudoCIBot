@@ -19,11 +19,19 @@ multi sub trait_mod:<is>(Method $r, :$serial-dedup) is export {
 
         if $d.sem.try_acquire() {
             my &next = nextcallee;
-            start {
+            if $*SERIAL_DEDUP_NO_THREADING {
                 $d.run-queued = False;
                 &next($obj);
                 $d.sem.release();
                 $obj.&$r() if $d.run-queued;
+            }
+            else {
+                start {
+                    $d.run-queued = False;
+                    &next($obj);
+                    $d.sem.release();
+                    $obj.&$r() if $d.run-queued;
+                }
             }
         }
         else {
