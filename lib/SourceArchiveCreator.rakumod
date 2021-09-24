@@ -74,7 +74,7 @@ class X::ArchiveCreationException is Exception {
     }
 }
 
-has IO::Path $.work-dir is required where *.d;
+has IO::Path $.work-dir  is required where *.d;
 has IO::Path $.store-dir is required where *.d;
 has $!rakudo-dir = $!work-dir.add('rakudo');
 has $!nqp-dir    = $!work-dir.add('nqp');
@@ -142,7 +142,37 @@ method create-archive(SourceSpec $source-spec --> Str) {
 
     validate run qw|xz -9|, $filepath;
 
+    # OBS needs three separate archives, so prepare those as well.
+    my $filepath-base = self!get-path-for-name: $id;
+
+    my $filepath-moar = $filepath-base ~ '-moar.tar';
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
+        $filepath-moar,
+        $!moar-dir.relative($!work-dir),
+        :cwd($!work-dir), :merge;
+    validate run qw|xz -9|, $filepath-moar;
+
+    my $filepath-nqp = $filepath-base ~ '-nqp.tar';
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
+        $filepath-nqp,
+        $!nqp-dir.relative($!work-dir),
+        :cwd($!work-dir), :merge;
+    validate run qw|xz -9|, $filepath-nqp;
+
+    my $filepath-rakudo = $filepath-base ~ '-rakuod.tar';
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
+        $filepath-rakudo,
+        $!rakudo-dir.relative($!work-dir),
+        :cwd($!work-dir), :merge;
+    validate run qw|xz -9|, $filepath-rakudo;
+
+
     return $id;
 }
+
+multi method get-archive-path($id           --> IO::Path) { self!get-path-for-name: $id ~ '.tar.xz' }
+multi method get-archive-path($id, 'moar'   --> IO::Path) { self!get-path-for-name: $id ~ '-moar.tar.xz' }
+multi method get-archive-path($id, 'nqp'    --> IO::Path) { self!get-path-for-name: $id ~ '-nqp.tar.xz' }
+multi method get-archive-path($id, 'rakudo' --> IO::Path) { self!get-path-for-name: $id ~ '-rakudo.tar.xz' }
 
 }
