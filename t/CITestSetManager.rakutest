@@ -14,6 +14,9 @@ red-defaults("SQLite");
 DB::create-db();
 #my $*RED-DEBUG = True;
 
+# Disable background worklist processing. Makes the tests more reliable.
+my $*SERIAL_DEDUP_NO_THREADING = True;
+
 ### Mocks
 # cp = CI platform
 class TestCIPlatform {
@@ -69,8 +72,6 @@ $gh.new-main-commit(
     branch => "master",
     commit-sha => "0123456789012345678901234567890123456789",
     user-url => "https://github.com/patrickbkr/GitHub-API-Testing/commit/1182b59facb4e86c591d691ed5a3f4b95433577b");
-
-sleep 1;
 
 ok $cp.test-set, "Adding a test set notifies the CI platforms";
 is $cp.test-set.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
