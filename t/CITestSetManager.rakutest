@@ -77,7 +77,7 @@ ok $cp.test-set, "Adding a test set notifies the CI platforms";
 is $cp.test-set.source-archive-id, $dummy-id, "Adding a test forwards the source archive id";
 
 ### Adding test suites
-my $test = DB::CITest.new;
+my $test = DB::CITest.new: :name("Linux-x86");
 $tsm.add-tests($test);
 is $gh-listener.new-tests.elems, 1, "New tests are forwarded to the Status listeners";
 is $gh-listener.new-tests[0], $test, "New tests are forwarded to the Status listeners";

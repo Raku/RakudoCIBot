@@ -10,7 +10,7 @@
       "LibXML:ver<0.5.15>",
       "Base64:ver<0.0.2>",
       "OO::Monitors:ver<1.1.1>",
-      "Red:ver<0.1.44>",
+      "Red:ver<0.1.47>",
       "Log::Async:ver<0.0.7>"
   ],
   "test-depends": [
@@ -31,7 +31,6 @@
       "CITestSetManager": "lib/CITestSetManager.rakumod",
       "CITestSetListener": "lib/CITestSetListener.rakumod",
       "CITestStatusListener": "lib/CITestStatusListener.rakumod",
-      "WebService::OBS": "lib/WebService/OBS.rakumod",
       "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
       "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
       "GitHubCITestRequester": "lib/GitHubCITestRequester.rakumod",
@@ -41,9 +40,15 @@
       "DB::CITestSet": "lib/DB.rakumod",
       "DB::GitHubPR": "lib/DB.rakumod",
       "DB::Command": "lib/DB.rakumod",
-      "SerialDedup": "lib/SerialDedup.rakumod"
+      "SerialDedup": "lib/SerialDedup.rakumod",
+      "OBS": "lib/OBS.rakumod",
+      "OBSInterface": "lib/OBSInterface.rakumod",
+      "Config": "lib/Config.rakumod"
   },
   "resources": [
+      "moarvm.spec",
+      "nqp-moarvm.spec",
+      "rakudo-moarvm.spec"
   ],
   "source-url": null,
   "tags": [

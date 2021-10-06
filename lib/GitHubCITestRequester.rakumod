@@ -28,7 +28,7 @@ method new-pr-commit(:$repo, :$branch, :$project, :$pr-number, :$commit-sha, :$u
         :$repo,
         commit-sha => '0123456789012345678901234567890123456789',
         :$pr;
-    self!process-worklist;
+    self.process-worklist;
 }
 
 method new-main-commit(:$repo!, :$branch!, :$commit-sha!, :$user-url!) {
@@ -37,7 +37,7 @@ method new-main-commit(:$repo!, :$branch!, :$commit-sha!, :$user-url!) {
         project    => self!repo-to-project($repo),
         :$repo,
         commit-sha => '0123456789012345678901234567890123456789';
-    self!process-worklist;
+    self.process-worklist;
 }
 
 method new-commit-comment(:$repo, :$commit-sha, :$comment-id, :$comment-text, :$user-url) {
@@ -55,7 +55,7 @@ method !repo-to-project($repo) {
     die "Unknown repo $repo seen";
 }
 
-method !process-worklist() is serial-dedup {
+method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status ⊂ [DB::NEW]) -> $test-set {
         my $source-spec = self!determine-source-spec(
             project => $test-set.project,

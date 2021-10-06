@@ -14,6 +14,12 @@ enum CITestStatus <
     SUCCESS
     FAILURE
     ABORTED
+    UNKNOWN
+>;
+
+enum CIPlatformTestSetStatus <
+    PLATFORM_IN_PROGRESS
+    PLATFORM_DONE
 >;
 
 enum Project <
@@ -56,21 +62,39 @@ enum CommandStatus <
     COMMAND_DONE
 >;
 
-model CITestSet { ... }
 model CITest { ... }
+model CIPlatformTestSet { ... }
+model CITestSet { ... }
 model GitHubPR { ... }
 model Command { ... }
 
 model CITest is rw is table<citest> {
     has UInt                     $.id                    is serial;
+    has Str                      $.name                  is column;
     has DateTime                 $.creation              is column .= now;
-    has UInt                     $!fk-test-set           is referencing( *.id, :model(DB::CITestSet) );
-    has DB::CITestSet            $.test-set              is relationship( *.fk-test-set );
-    has DateTime                 $.test-started          is column{ :nullable };
-    has DateTime                 $.test-finished         is column{ :nullable };
-    has DB::CIPlatformIdentifier $.ciplatform            is column{ :nullable };
+    has UInt                     $!fk-platform-test-set  is referencing( *.id, :model(DB::CIPlatformTestSet) );
+    has DB::CITestSet            $.platform-test-set     is relationship( *.fk-platform-test-set );
+    has DateTime                 $.test-started-at       is column{ :nullable };
+    has DateTime                 $.test-finished-at      is column{ :nullable };
     has DB::CITestStatus         $.status                is column = NOT_STARTED;
-    has Str                      $.log                   is column{ :type<text> };
+    has Str                      $.log                   is column{ :nullable, :type<text> };
+}
+
+model CIPlatformTestSet is rw is table<ciplatform_test_set> {
+    has UInt                $.id           is serial;
+    has DateTime            $.creation     is column .= now;
+
+    has DB::CIPlatformIdentifier    $.platform  is column{ :nullable };
+    has DB::CIPlatformTestSetStatus $.status      is column = DB::PLATFORM_IN_PROGRESS;
+    has UInt                        $!fk-test-set is referencing( *.id, :model(DB::CITestSet) );
+    has DB::CITestSet               $.test-set    is relationship( *.fk-test-set );
+
+    has DB::CITest @.tests          is relationship( *.fk-platform-test-set );
+
+    # Responsibility of OBS
+    has DateTime $.obs-started-at      is column{ :nullable };
+    has DateTime $.obs-finished-at     is column{ :nullable };
+    has DateTime $.obs-last-check-time is column{ :nullable };
 }
 
 model CITestSet is rw is table<citest_set> {
@@ -107,30 +131,30 @@ model CITestSet is rw is table<citest_set> {
         has Str                 $.source-archive-id        is column{ :nullable, :type<text> };
         has UInt                $.source-retrieval-retries is column = 0;
 
-        has DB::CITest          @.tests                    is relationship( *.fk-test-set );
+        has DB::CIPlatformTestSet @.tests                  is relationship( *.fk-test-set );
 
-        method source-spec() is rw {
-            return-rw Proxy.new(
-                FETCH => sub ($) {
-                    SourceSpec.new(
-                        :$!rakudo-repo,
-                        :$!rakudo-commit-sha,
-                        :$!nqp-repo,
-                        :$!nqp-commit-sha,
-                        :$!moar-repo,
-                        :$!moar-commit-sha,
-                    )
-                },
-                STORE => sub ($, $spec) {
-                    $!rakudo-repo       = $spec.rakudo-repo;
-                    $!rakudo-commit-sha = $spec.rakudo-commit-sha;
-                    $!nqp-repo          = $spec.nqp-repo;
-                    $!nqp-commit-sha    = $spec.nqp-commit-sha;
-                    $!moar-repo         = $spec.moar-repo;
-                    $!moar-commit-sha   = $spec.moar-commit-sha;
-                },
-            )
-        }
+    method source-spec() is rw {
+        return-rw Proxy.new(
+            FETCH => sub ($) {
+                SourceSpec.new(
+                    :$!rakudo-repo,
+                    :$!rakudo-commit-sha,
+                    :$!nqp-repo,
+                    :$!nqp-commit-sha,
+                    :$!moar-repo,
+                    :$!moar-commit-sha,
+                )
+            },
+            STORE => sub ($, $spec) {
+                $!rakudo-repo       = $spec.rakudo-repo;
+                $!rakudo-commit-sha = $spec.rakudo-commit-sha;
+                $!nqp-repo          = $spec.nqp-repo;
+                $!nqp-commit-sha    = $spec.nqp-commit-sha;
+                $!moar-repo         = $spec.moar-repo;
+                $!moar-commit-sha   = $spec.moar-commit-sha;
+            },
+        )
+    }
 }
 
 model GitHubPR is rw is table<github_pr> {
@@ -172,5 +196,5 @@ model Command is rw is table<command> {
 }
 
 our sub create-db() {
-    schema(DB::CITest, DB::CITestSet, DB::GitHubPR, DB::Command).create;
+    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPR, DB::Command).create;
 }

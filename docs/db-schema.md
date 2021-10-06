@@ -7,8 +7,8 @@ A `test` is a single test in a test suite on a CI platform for a specific test s
 id
 fk-test-set-id
 creation As Timestamp
-test-started As Timestamp
-test-finished As Timestamp
+test-started-at As Timestamp
+test-finished-at As Timestamp
 ciplatform-identifier
     - azure
     - OBS

@@ -9,7 +9,6 @@ $sac-work-dir.mkdir;
 $sac-store-dir.mkdir;
 
 
-
 my $sac = SourceArchiveCreator.new: work-dir => $sac-work-dir, store-dir => $sac-store-dir;
 
 ok $sac-work-dir.add('rakudo/.git').d;

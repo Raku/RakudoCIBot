@@ -71,3 +71,7 @@ method test-status-updated($test) {
     }
 }
 
+method platform-test-set-done($platform-test-set) {
+    # TODO
+}
+
