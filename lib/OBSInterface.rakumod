@@ -7,10 +7,10 @@ use Base64;
 unit class OBSInterface;
 
 has Cro::HTTP::Client $!cro .= new:
-    headers => {
+    headers => [
         Accept => 'application/xml',
         Authorization => $!auth-str,
-    };
+    ];
 has LibXML     $!xml-parser .= new;
 
 has $.apiurl = 'https://api.opensuse.org';

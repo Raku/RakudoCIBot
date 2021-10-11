@@ -8,7 +8,6 @@ use Red::Operators:api<2>;
 has SetHash $!status-listeners .= new;
 has SetHash $!test-set-listeners .= new;
 has $!source-archive-creator is built is required;
-has $!trigger-interval is built;
 
 method register-status-listener($status-listener) {
     $!status-listeners.set: $status-listener;
@@ -60,18 +59,19 @@ method add-test-set(:$test-set, :$source-spec) {
 }
 
 method add-tests(*@tests) {
-    for $!status-listeners.keys {
-        $_.tests-queued(@tests)
-    }
+    $_.tests-queued(@tests) for $!status-listeners.keys;
 }
 
 method test-status-updated($test) {
-    for $!status-listeners.keys {
-        $_.test-status-changed($test)
-    }
+    $_.test-status-changed($test) for $!status-listeners.keys;
 }
 
 method platform-test-set-done($platform-test-set) {
-    # TODO
+    my $test-set = $platform-test-set.test-set;
+    if [&&] $test-set.platform-test-sets.map(*.status == DB::PLATFORM_DONE) {
+        $_.test-set-done($test-set) for $!status-listeners.keys;
+        $test-set.status = DB::DONE;
+        $test-set.^save;
+    }
 }
 

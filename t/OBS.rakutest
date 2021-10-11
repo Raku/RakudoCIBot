@@ -32,7 +32,7 @@ my $dummy-path = "/some/path";
 my $dummy-log = "Build Succeeded! Yay!";
 my $archive-id = "hieapu";
 
-my $sac = mocked(SourceArchiveCreator,
+my $source-archive-creator = mocked(SourceArchiveCreator,
     returning => {
         get-archive-path => $dummy-path,
     }
@@ -115,19 +115,20 @@ my $obs-interface = mocked(OBSInterface,
         }
     },
 );
-my $tsm = mocked(CITestSetManager);
+my $testset-manager = mocked(CITestSetManager);
 my OBS $obs .= new:
-    :$tsm,
+    :$testset-manager,
     interface => $obs-interface,
-    :$sac,
+    :$source-archive-creator,
     :$work-dir;
 
 ### Testing starts here
 my $testset = DB::CITestSet.^create:
     event-type        => DB::MAIN_BRANCH,
     project           => DB::RAKUDO,
-    repo              => "rakudo/rakudo",
+    git-url           => "https://github.com/rakudo/rakudo.git",
     commit-sha        => '0123456789012345678901234567890123456789',
+    user-url          => "https://github.com/rakudo/rakudo/commit/0123456789012345678901234567890123456789",
     source-archive-id => $archive-id,
 ;
 
@@ -146,7 +147,7 @@ check-mock($obs-interface,
 
 is DB::CITest.^all.elems, 2, "CITests were created";
 is DB::CITest.^all.grep({ $_.status ⊂ (DB::IN_PROGRESS, )}).elems, 2, "CITests have right status";
-check-mock($tsm,
+check-mock($testset-manager,
     *.never-called("platform-test-set-done"),
     *.called("add-tests", :2times),
 );
@@ -156,7 +157,7 @@ $obs.process-worklist();
 is DB::CITest.^all.grep({ $_.status ⊂ (DB::IN_PROGRESS, )}).elems, 1, "CITests are updated";
 is DB::CITest.^all.grep({ $_.status ⊂ (DB::SUCCESS, )}).elems, 1, "CITests are updated";
 ok DB::CITest.^all.first({ $_.status ⊂ (DB::SUCCESS, )}).log.contains($dummy-log), "Logs are written";
-check-mock($tsm,
+check-mock($testset-manager,
     *.never-called("platform-test-set-done"),
     *.called("test-status-updated", :1times),
 );
@@ -165,7 +166,7 @@ check-mock($tsm,
 $obs.process-worklist();
 is DB::CITest.^all.elems, 2, "All CITests are finished";
 is DB::CITest.^all.grep({ $_.status ⊂ (DB::SUCCESS, )}).elems, 2, "All CITests are finished";
-check-mock($tsm,
+check-mock($testset-manager,
     *.called("platform-test-set-done", :1times),
     *.called("test-status-updated", :2times),
 );

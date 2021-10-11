@@ -8,3 +8,7 @@ method test-status-changed($test) {
     ...
 }
 
+method test-set-done($test-set) {
+    ...
+}
+

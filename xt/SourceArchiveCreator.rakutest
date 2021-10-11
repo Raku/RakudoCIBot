@@ -16,11 +16,11 @@ ok $sac-work-dir.add('nqp/.git').d;
 ok $sac-work-dir.add('MoarVM/.git').d;
 
 my SourceSpec $spec .= new:
-    rakudo-repo       => 'https://github.com/rakudo/rakudo.git',
+    rakudo-git-url    => 'https://github.com/rakudo/rakudo.git',
     rakudo-commit-sha => '87d019f0703dae6d901fd01ba3f0dc5ae686ee56',
-    nqp-repo          => 'https://github.com/Raku/nqp.git',
+    nqp-git-url       => 'https://github.com/Raku/nqp.git',
     nqp-commit-sha    => '3ff1af5daa91557ce222a3de30f79dbccd0c0a52',
-    moar-repo         => 'https://github.com/MoarVM/MoarVM.git',
+    moar-git-url      => 'https://github.com/MoarVM/MoarVM.git',
     moar-commit-sha   => '684b240e0242afb3e1abd9ae7818b1f50f3ef2bd';
 
 my $id = $sac.create-archive($spec);

@@ -1,0 +1,72 @@
+use Test;
+use Test::Mock;
+use DB;
+use Red:api<2>;
+
+use GitHubCITestRequester;
+use GitHubInterface;
+use CITestSetManager;
+
+# Fast, in memory, ephemeral DB.
+red-defaults("SQLite");
+DB::create-db();
+#my $*RED-DEBUG = True;
+#my $*RED-DEBUG-RESPONSE = True;
+
+# Disable background worklist processing. Makes the tests reproducible.
+my $*SERIAL_DEDUP_NO_THREADING = True;
+
+
+my $tsm = mocked(CITestSetManager);
+my $interface = mocked(GitHubInterface,
+    returning => {
+        retrieve-pulls => (
+            GitHubCITestRequester::PRTask.new:
+                project      => "rakudo",
+                git-url      => 'https://github.com/rakudo/rakudo.git',
+                head-branch  => "feature-1",
+                number       => 1,
+                title        => "Some feature",
+                body         => "Add this nice feature",
+                state        => "OPEN",
+                user-url     => 'https://github.com/rakudo/rakudo/pull/1',
+                comments     => (
+                    GitHubCITestRequester::PRCommentTask.new(
+                        id         => "037531",
+                        created-at => "2021-10-10T14:58:23",
+                        updated-at => "2021-10-10T14:58:23",
+                        pr-number  => 1,
+                        user-url   => 'https://github.com/rakudo/rakudo/pull/1#issuecomment-939398255',
+                        body       => "LGTM. Let's do this!"
+                    ),
+                ),
+                commit-task  => GitHubCITestRequester::PRCommitTask.new(
+                    project   => "rakudo",
+                    pr-number => 1,
+                    commit-sha => "739f80ae46ea9cd8a640473cba22a23c435f1cde",
+                    user-url => "https://github.com/rakudo/rakudo/pull/1/commits/739f80ae46ea9cd8a640473cba22a23c435f1cde",
+                    ),
+                ;
+        )
+    });
+
+my GitHubCITestRequester $requester .= new:
+    testset-manager => $tsm,
+    github-interface => $interface,
+;
+
+$requester.poll-for-changes;
+
+check-mock($interface,
+    *.called("retrieve-pulls", :3times)
+);
+
+is DB::CITestSet.^all.elems, 1, "CITestSet is created";
+is DB::CITestSet.^all()[0].commit-sha, "739f80ae46ea9cd8a640473cba22a23c435f1cde", "CITestSet references the right commit";
+is DB::CITestSet.^all()[0].event-type, DB::PR, "CITestSet event-type is correct";
+
+check-mock($tsm,
+    *.called("add-test-set", with => :(:$test-set, :$source-spec), :1times)
+);
+
+done-testing;

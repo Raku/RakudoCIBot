@@ -1,0 +1,22 @@
+use Test;
+use File::Temp;
+
+use OBSInterface;
+use SourceArchiveCreator;
+
+if %*ENV<OBS_TEST_USER>:!exists or %*ENV<OBS_TEST_PASSWORD>:!exists {
+    note "Need to set OBS_TEST_USER and OBS_TEST_PASSWORD env vars to run these tests.";
+    exit 1;
+}
+
+my OBSInterface $interface .= new:
+    user => %*ENV<OBS_TEST_USER>,
+    password => %*ENV<OBS_TEST_PASSWORD>;
+
+isa-ok $interface.server-revision, Str, "Basic request works";
+
+ok $interface.upload-file('rakudo-moarvm','test.file', blob => "Some content."), "Upload request";
+
+ok $interface.commit('rakudo-moarvm','some-rev'), "Commit request";
+
+done-testing;

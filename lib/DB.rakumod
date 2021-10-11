@@ -78,6 +78,9 @@ model CITest is rw is table<citest> {
     has DateTime                 $.test-finished-at      is column{ :nullable };
     has DB::CITestStatus         $.status                is column = NOT_STARTED;
     has Str                      $.log                   is column{ :nullable, :type<text> };
+
+    # Responsibility of the GitHubCITestRequester
+    has UInt                     $.github-id             is column{ :nullable };
 }
 
 model CIPlatformTestSet is rw is table<ciplatform_test_set> {
@@ -98,59 +101,59 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
 }
 
 model CITestSet is rw is table<citest_set> {
-    has UInt                $.id           is serial;
-    has DateTime            $.creation     is column .= now;
+    has UInt                      $.id                       is serial;
+    has DateTime                  $.creation                 is column .= now;
 
     # Responsibility of the GitHubCITestRequester
-        has DB::GitHubEventType $.event-type               is column;
+        has DB::GitHubEventType   $.event-type               is column;
 
-        has DB::Project         $.project                  is column;
-
-        has Str                 $.repo                     is column;
-        has Str                 $.commit-sha               is column;
+        has DB::Project           $.project                  is column;
+        has Str                   $.git-url                  is column;
+        has Str                   $.commit-sha               is column;
+        has Str                   $.user-url                 is column;
 
         # If this test request was caused by a PR or new commit therein.
-        has UInt                $!fk-pr                    is referencing( :nullable, *.id, :model(DB::GitHubPR) );
-        has DB::GitHubPR        $.pr                       is relationship( *.fk-pr );
+        has UInt                  $!fk-pr                    is referencing( :nullable, *.id, :model(DB::GitHubPR) );
+        has DB::GitHubPR          $.pr                       is relationship( *.fk-pr );
 
         # If this test request was caused by a command.
-        has UInt                $!fk-command               is referencing( :nullable, *.id, :model(DB::Command) );
-        has DB::Command         $.command                  is relationship( *.fk-command );
+        has UInt                  $!fk-command               is referencing( :nullable, *.id, :model(DB::Command) );
+        has DB::Command           $.command                  is relationship( *.fk-command );
 
     # Responsibility of the CITestSetManager
-        has DB::CITestSetStatus $.status                   is column = NEW;
-        has DB::CITestSetError  $.error                    is column{ :nullable };
+        has DB::CITestSetStatus   $.status                   is column = NEW;
+        has DB::CITestSetError    $.error                    is column{ :nullable };
 
-        has Str                 $!rakudo-repo              is column{ :nullable }; # e.g. 'rakudo/rakudo'
-        has Str                 $!rakudo-commit-sha        is column{ :nullable };
-        has Str                 $!nqp-repo                 is column{ :nullable };
-        has Str                 $!nqp-commit-sha           is column{ :nullable };
-        has Str                 $!moar-repo                is column{ :nullable };
-        has Str                 $!moar-commit-sha          is column{ :nullable };
+        has Str                   $!rakudo-git-url           is column{ :nullable }; # e.g. 'rakudo/rakudo'
+        has Str                   $!rakudo-commit-sha        is column{ :nullable };
+        has Str                   $!nqp-git-url              is column{ :nullable };
+        has Str                   $!nqp-commit-sha           is column{ :nullable };
+        has Str                   $!moar-git-url             is column{ :nullable };
+        has Str                   $!moar-commit-sha          is column{ :nullable };
 
-        has Str                 $.source-archive-id        is column{ :nullable, :type<text> };
-        has UInt                $.source-retrieval-retries is column = 0;
+        has Str                   $.source-archive-id        is column{ :nullable, :type<text> };
+        has UInt                  $.source-retrieval-retries is column = 0;
 
-        has DB::CIPlatformTestSet @.tests                  is relationship( *.fk-test-set );
+        has DB::CIPlatformTestSet @.platform-test-sets       is relationship( *.fk-test-set );
 
     method source-spec() is rw {
         return-rw Proxy.new(
             FETCH => sub ($) {
                 SourceSpec.new(
-                    :$!rakudo-repo,
+                    :$!rakudo-git-url,
                     :$!rakudo-commit-sha,
-                    :$!nqp-repo,
+                    :$!nqp-git-url,
                     :$!nqp-commit-sha,
-                    :$!moar-repo,
+                    :$!moar-git-url,
                     :$!moar-commit-sha,
                 )
             },
             STORE => sub ($, $spec) {
-                $!rakudo-repo       = $spec.rakudo-repo;
+                $!rakudo-git-url    = $spec.rakudo-git-url;
                 $!rakudo-commit-sha = $spec.rakudo-commit-sha;
-                $!nqp-repo          = $spec.nqp-repo;
+                $!nqp-git-url       = $spec.nqp-git-url;
                 $!nqp-commit-sha    = $spec.nqp-commit-sha;
-                $!moar-repo         = $spec.moar-repo;
+                $!moar-git-url      = $spec.moar-git-url;
                 $!moar-commit-sha   = $spec.moar-commit-sha;
             },
         )
@@ -158,14 +161,14 @@ model CITestSet is rw is table<citest_set> {
 }
 
 model GitHubPR is rw is table<github_pr> {
-    has UInt          $.id        is serial;
-    has DateTime      $.creation  is column .= now;
-    has UInt          $.number    is column;
-    has DB::Project   $.project   is column;
-    has Str           $.web-url   is column;
-    has Str           $.repo      is column;
-    has Str           $.branch    is column;
-    has DB::PRStatus  $.status    is column;
+    has UInt          $.id            is serial;
+    has DateTime      $.creation      is column .= now;
+    has UInt          $.number        is column;
+    has DB::Project   $.project       is column;
+    has Str           $.git-url       is column;
+    has Str           $.head-branch   is column;
+    has Str           $.user-url      is column;
+    has DB::PRStatus  $.status        is column;
 
     has DB::CITestSet @.test-sets is relationship( *.fk-pr );
 }

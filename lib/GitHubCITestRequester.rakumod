@@ -1,41 +1,125 @@
-unit class GitHubCITestRequester;
-
+use CITestStatusListener;
 use DB;
 use Red::Operators:api<2>;
 use SerialDedup;
 use SourceArchiveCreator;
 use CITestSetManager;
-use GitHubInterface;
+use Config;
+
+
+unit class GitHubCITestRequester does CITestStatusListener;
+
+class PRCommentTask {
+    has $.id is required;
+    has $.created-at is required;
+    has $.updated-at is required;
+    has $.pr-number is required;
+    has $.user-url is required;
+    has $.body is required;
+}
+
+class PRCommitTask {
+    has $.project is required;
+    has $.pr-number is required;
+    has $.commit-sha is required;
+    has $.user-url is required;
+}
+
+class PRTask {
+    has $.project is required;
+    has $.number is required;
+    has $.title is required;
+    has $.body is required;
+    has $.state is required;
+    has $.git-url is required;
+    has $.head-branch is required;
+    has $.user-url is required;
+    has PRCommentTask @.comments;
+    has PRCommitTask $.commit-task is required;
+}
 
 has CITestSetManager $.testset-manager is required;
-has GitHubInterface $.github-interface is required;
+has $.github-interface is rw;
 
-method new-pr(:$pr-number, :$user-url, :$body, :$from-repo, :$from-branch, :$to-repo, :$to-branch) {
+has Supplier::Preserving $!input-task-supplier .= new;
+has $!input-task-supply = $!input-task-supplier.Supply;
 
+submethod TWEAK() {
+    $!input-task-supply.tap: -> $task {
+        given $task {
+            when PRTask { self!process-pr-task($task) }
+            when PRCommentTask { self!process-pr-comment-task($task) }
+            when PRCommitTask { self!process-pr-commit-task($task) }
+            default { die "Unknown task: " ~ $task.^name }
+        }
+    }
 }
 
-method new-pr-comment(:$repo, :$pr-number, :$comment-id, :$comment-text, :$user-url) {
-
+method add-task($task) {
+    $!input-task-supplier.emit: $task
 }
 
-method new-pr-commit(:$repo, :$branch, :$project, :$pr-number, :$commit-sha, :$user-url) {
-    my $pr = DB::PR.^load(number => $pr-number);
+method !process-pr-task(PRTask $pr) {
+    # Check if it's new
+    if DB::GitHubPR.^all.grep({
+                $_.number eq $pr.number
+            }).elems == 0
+            && $pr.state eq "OPEN" {
+        # Unknown PR, add it!
+        my $db-pr = DB::GitHubPR.^create:
+            project      => self!project-to-db-project($pr.project),
+            number       => $pr.number,
+            git-url      => $pr.git-url,
+            head-branch  => $pr.head-branch,
+            user-url     => $pr.user-url,
+            status       => DB::OPEN,
+        ;
+        self!process-pr-commit-task($pr.commit-task);
+    }
+
+    self!process-pr-comment-task($_) for $pr.comments;
+}
+
+method !project-to-db-project($project) {
+    $project eq "rakudo"    ?? DB::RAKUDO
+    !! $project eq "Raku"   ?? DB::NQP
+    !! $project eq "MoarVM" ?? DB::MOAR
+    !! die "unknown project";
+}
+
+method !process-pr-commit-task(PRCommitTask $commit) {
+    my $pr = DB::GitHubPR.^all.first({
+                $_.number eq $commit.pr-number
+                && $_.project ⊂ (self!project-to-db-project($commit.project),)
+            });
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
-
-    my $test-set = DB::CITestSet.^create:
+    DB::CITestSet.^create:
         event-type => DB::PR,
-        :$project,
-        :$repo,
-        commit-sha => '0123456789012345678901234567890123456789',
-        :$pr;
+        project    => self!project-to-db-project($commit.project),
+        git-url    => $pr.git-url,
+        commit-sha => $commit.commit-sha,
+        user-url   => $commit.user-url,
+        :$pr,
+    ;
     self.process-worklist;
 }
+method !process-pr-comment-task(PRCommentTask $comment) {
+    # TODO
+}
 
-method new-main-commit(:$repo!, :$branch!, :$commit-sha!, :$user-url!) {
+method poll-for-changes() is serial-dedup {
+    for %Config::projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
+        # PRs
+        self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, $Config::github-pullrequest-check-count);
+    }
+}
+
+#`[
+method new-main-commit(:$git-url!, :$branch!, :$commit-sha!, :$user-url!) {
     my $test-set = DB::CITestSet.^create:
         event-type => DB::MAIN_BRANCH,
-        project    => self!repo-to-project($repo),
-        :$repo,
+        project    => self!url-to-project($git-url),
+        :$git-url,
         commit-sha => '0123456789012345678901234567890123456789';
     self.process-worklist;
 }
@@ -48,40 +132,104 @@ method new-retest-command(:$project, :$pr-number, :$comment-id, :$user-url) {
 
 }
 
-method !repo-to-project($repo) {
-    return DB::RAKUDO if $repo eq 'rakudo/rakudo';
-    return DB::MOAR   if $repo eq 'MoarVM/MoarVM';
-    return DB::NQP if $repo eq 'Raku/nqp';
-    die "Unknown repo $repo seen";
+method !url-to-project($url) {
+    return DB::RAKUDO if $url eq 'https://github.com/rakudo/rakudo.git';
+    return DB::MOAR   if $url eq 'https://github.com/MoarVM/MoarVM.git';
+    return DB::NQP if $url eq 'https://github.com/Raku/nqp.git';
+    die "Unknown URL $url seen";
 }
+]
 
 method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status ⊂ [DB::NEW]) -> $test-set {
         my $source-spec = self!determine-source-spec(
-            project => $test-set.project,
-            repo    => $test-set.repo,
+            project    => $test-set.project,
+            git-url    => $test-set.git-url,
             commit-sha => $test-set.commit-sha,
         );
         $!testset-manager.add-test-set(:$test-set, :$source-spec);
     }
 }
 
-method !determine-source-spec(:$project, :$repo, :$commit-sha --> SourceSpec) {
+method !determine-source-spec(:$project, :$git-url, :$commit-sha --> SourceSpec) {
     given $project {
         when DB::RAKUDO {
-            SourceSpec.new:
-                rakudo-repo => $repo,
+            return SourceSpec.new:
+                rakudo-git-url => $git-url,
                 rakudo-commit => $commit-sha;
         }
         when DB::NQP {
-            SourceSpec.new:
-                nqp-repo => $repo,
+            return SourceSpec.new:
+                nqp-git-url => $git-url,
                 nqp-commit => $commit-sha;
         }
         when DB::MOAR {
-            SourceSpec.new:
-                moar-repo => $repo,
+            return SourceSpec.new:
+                moar-git-url => $git-url,
                 moar-commit => $commit-sha;
         }
     }
+}
+
+method !github-url-to-project-repo($url) {
+    if $url ~~ / 'https://github.com/' $<project>=( <-[ / ]>+ ) '/' $<repo>=( <-[ . ]>+ ) '.git' / {
+        return {
+            project => $<project>,
+            repo    => $<repo>,
+        }
+    }
+    die "GitHub URL couldn't be parsed: $url";
+}
+
+method tests-queued(@tests) {
+    for @tests -> $test {
+        my $ts = $test.platform-test-set.test-set;
+        my %project-and-repo = self!github-url-to-project-repo($ts.url);
+        $test.github-id = $!github-interface.create-check-run(
+            owner      => %project-and-repo<project>,
+            repo       => %project-and-repo<repo>,
+            name       => $test.name,
+            sha        => $ts.commit-sha,
+            url        => "",
+            id         => $test.id,
+            started-at => DateTime.now.Str,
+        );
+        $test.^save;
+    }
+}
+
+method test-status-changed($test) {
+    my $gh-status = do given $test.status {
+        when DB::NOT_STARTED { "queued" }
+        when DB::IN_PROGRESS { "in_progress" }
+        default          { "completed" }
+    };
+    my $completed-at;
+    my $conclusion;
+    if $gh-status eq "completed" {
+        $completed-at = DateTime.now.Str;
+        $conclusion = do given $test.status {
+            when DB::NOT_STARTED { "queued" }
+            when DB::IN_PROGRESS { "in_progress" }
+            when DB::SUCCESS     { "success" }
+            when DB::FAILURE     { "failure" }
+            when DB::ABORTED     { "cancelled" }
+            when DB::UNKNOWN     { "timed_out" }
+        };
+    }
+
+    my $ts = $test.platform-test-set.test-set;
+    my %project-and-repo = self!github-url-to-project-repo($ts.url);
+    $!github-interface.update-test-run(
+        owner      => %project-and-repo<project>,
+        repo       => %project-and-repo<repo>,
+        check-run-id => $test,
+        status => $gh-status,
+        :$completed-at,
+        :$conclusion,
+    );
+}
+
+method test-set-done($test-set) {
+    # TODO
 }

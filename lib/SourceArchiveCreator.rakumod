@@ -4,11 +4,11 @@ class SourceSpec {
     # A Git SHA-1 is a length 40 hex number
     subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest /;
 
-    has Str $.rakudo-repo = 'rakudo/rakudo';
+    has Str $.rakudo-git-url = 'https://github.com/rakudo/rakudo.git';
     has SHA1 $.rakudo-commit-sha = 'latest';
-    has Str $.nqp-repo = 'Raku/nqp';
+    has Str $.nqp-git-url = 'https://github.com/Raku/nqp.git';
     has SHA1 $.nqp-commit-sha = 'latest';
-    has Str $.moar-repo = 'MoarVM/MoarVM';
+    has Str $.moar-git-url = 'https://github.com/MoarVM/MoarVM.git';
     has SHA1 $.moar-commit-sha = 'latest';
     
     submethod TWEAK() {
@@ -60,20 +60,6 @@ size                      6.3 MB
 We'll go with xz for now.
 ]
 
-class X::ArchiveCreationException is Exception {
-    has $.command;
-    has $.exitcode;
-    has $.output;
-
-    multi method message() {
-        "Command: '$!command' failed with code: $!exitcode. Output was: '$!output'";
-    }
-
-    method gist() {
-        "Command: '$!command' failed with code: $!exitcode. Output was: '$!output'";
-    }
-}
-
 has IO::Path $.work-dir  is required where *.d;
 has IO::Path $.store-dir is required where *.d;
 has $!rakudo-dir = $!work-dir.add('rakudo');
@@ -107,9 +93,9 @@ method create-archive(SourceSpec $source-spec --> Str) {
         }
     }
 
-    for $!rakudo-dir, $source-spec.rakudo-repo, $source-spec.rakudo-commit-sha,
-        $!nqp-dir,    $source-spec.nqp-repo, $source-spec.nqp-commit-sha,
-        $!moar-dir,   $source-spec.moar-repo, $source-spec.moar-commit-sha
+    for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha,
+        $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
+        $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha
         -> $repo-dir, $remote, $commit {
 
         run(qw|git remote rm foobar|,

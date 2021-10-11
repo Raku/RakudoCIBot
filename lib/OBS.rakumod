@@ -11,13 +11,13 @@ use Log::Async;
 use Config;
 use CITestSetManager;
 
-has SourceArchiveCreator $.sac is required;
+has SourceArchiveCreator $.source-archive-creator is required;
 has IO::Path $!work-dir is built is required where *.d;
 has OBSInterface $!interface is built is required;
-has CITestSetManager $!tsm is built is required;
+has CITestSetManager $!testset-manager is built is required;
 
 method new-test-set(DB::CITestSet $test-set) {
-    my $pts = DB::CIPlatformTestSet.^create:
+    DB::CIPlatformTestSet.^create:
         :$test-set,
         platform => DB::OBS;
 
@@ -49,7 +49,7 @@ method process-worklist() is serial-dedup {
             for "moarvm", "moarvm",
                 "nqp-moarvm", "nqp",
                 "rakudo-moarvm", "rakudo" -> $project, $archive-prefix {
-                my $archive-path = $!sac.get-archive-path($source-id, $project);
+                my $archive-path = $!source-archive-creator.get-archive-path($source-id, $project);
                 $!interface.upload-file($project, "PTS-ID-" ~ $running-pts.id, :blob(""));
                 $!interface.upload-file($project, $archive-prefix ~ "-" ~ $source-id ~ ".tar.xz", :path($archive-path));
                 my $spec = %?RESOURCES{$project ~ ".spec"}.slurp;
@@ -133,12 +133,12 @@ method process-worklist() is serial-dedup {
             }
 
             if $test-is-new {
-                $!tsm.add-tests($test);
+                $!testset-manager.add-tests($test);
             }
             elsif $test.status != $status {
                 $test.status = $status;
                 $test.^save;
-                $!tsm.test-status-updated($test);
+                $!testset-manager.test-status-updated($test);
             }
         }
 
@@ -152,7 +152,7 @@ method process-worklist() is serial-dedup {
             $running-pts.status = DB::PLATFORM_DONE;
             $running-pts.obs-finished-at = DateTime.now;
             $running-pts.^save;
-            $!tsm.platform-test-set-done($running-pts);
+            $!testset-manager.platform-test-set-done($running-pts);
         }
         else {
             $running-pts.^save;

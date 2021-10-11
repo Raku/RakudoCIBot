@@ -27,6 +27,7 @@
   "name": "RakuCIBot",
   "perl": "6.d",
   "provides": {
+      "RakuCIBot": "lib/RakuCIBot.rakumod",
       "Routes": "lib/Routes.rakumod",
       "CITestSetManager": "lib/CITestSetManager.rakumod",
       "CITestSetListener": "lib/CITestSetListener.rakumod",
