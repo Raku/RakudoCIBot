@@ -9,22 +9,20 @@
 A system to orchestrate the CI process of the Rakudo compiler and its related
 projects.
 
-=head1 Installation
+There is no entry point yet. It's just a bunch of files and tests.
+Also there is a dependency on the unreleased new version of WebService::GitHub.
+To run the tests do:
 
-Build the container with
+    zef install OpenAPI::Model JSON::Fast Template::Mustache Cro::WebApp PathTools
+    git clone https://github.com/patrickbkr/perl6-WebService-GitHub.git
+    cd perl6-WebService-GitHub/dev-scripts
+    ./generate-code
+    # files will end up in perl6-WebService-GitHub/gen
 
-    podman build -t raku-ci-bot .
-
-run it with
-
-    podman run --rm -p 10000:10000 raku-ci-bot
-
-To export the container for upload to a server do
-
-    podman save localhost/raku-ci-bot:latest | gzip > raku-ci-bot_latest.tgz
-
-For quicker uploads it might make sense to not C<gzip> the image and use
-C<rsync> for the upload.
+    zef install App::Prove6
+    cd /path/to/RakuCIBot
+    zef install --deps-only .
+    prove6 -I. -I/path/to/perl6-WebService-GitHub/gen
 
 
 =head1 License
