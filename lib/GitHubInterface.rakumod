@@ -223,15 +223,15 @@ method retrieve-pulls($project, $repo, $count) {
     };
 }
 
-method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, :$id!, :$started-at!) {
-    my $data = $!gh-runs.create($owner, $repo, $sha, $name, :details-url($url), :external-id($id), :$started-at);
+method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, :$id!, DateTime:D :$started-at!) {
+    my $data = $!gh-runs.create($owner, $repo, $sha, $name, :details-url($url), :external-id($id), :started-at($started-at.Str));
     return $data<id>;
 }
 
-method update-check-run(:$owner!, :$repo!, :$check-run-id!, :$status!, :$completed-at, :$conclusion) {
+method update-check-run(:$owner!, :$repo!, :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
     $!gh-runs.update($owner, $repo, $check-run-id,
         :$status,
-        :$completed-at,
+        :completed-at($completed-at.Str),
         :$conclusion
     )
 }

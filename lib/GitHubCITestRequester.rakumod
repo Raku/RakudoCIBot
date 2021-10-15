@@ -174,8 +174,8 @@ method !determine-source-spec(:$project, :$git-url, :$commit-sha --> SourceSpec)
 method !github-url-to-project-repo($url) {
     if $url ~~ / 'https://github.com/' $<project>=( <-[ / ]>+ ) '/' $<repo>=( <-[ . ]>+ ) '.git' / {
         return {
-            project => $<project>,
-            repo    => $<repo>,
+            project => ~$<project>,
+            repo    => ~$<repo>,
         }
     }
     die "GitHub URL couldn't be parsed: $url";
@@ -184,7 +184,7 @@ method !github-url-to-project-repo($url) {
 method tests-queued(@tests) {
     for @tests -> $test {
         my $ts = $test.platform-test-set.test-set;
-        my %project-and-repo = self!github-url-to-project-repo($ts.url);
+        my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
         $test.github-id = $!github-interface.create-check-run(
             owner      => %project-and-repo<project>,
             repo       => %project-and-repo<repo>,
@@ -192,7 +192,7 @@ method tests-queued(@tests) {
             sha        => $ts.commit-sha,
             url        => "",
             id         => $test.id,
-            started-at => DateTime.now.Str,
+            started-at => DateTime.now,
         );
         $test.^save;
     }
@@ -207,7 +207,7 @@ method test-status-changed($test) {
     my $completed-at;
     my $conclusion;
     if $gh-status eq "completed" {
-        $completed-at = DateTime.now.Str;
+        $completed-at = DateTime.now;
         $conclusion = do given $test.status {
             when DB::NOT_STARTED { "queued" }
             when DB::IN_PROGRESS { "in_progress" }
@@ -219,11 +219,11 @@ method test-status-changed($test) {
     }
 
     my $ts = $test.platform-test-set.test-set;
-    my %project-and-repo = self!github-url-to-project-repo($ts.url);
-    $!github-interface.update-test-run(
+    my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
+    $!github-interface.update-check-run(
         owner      => %project-and-repo<project>,
         repo       => %project-and-repo<repo>,
-        check-run-id => $test,
+        check-run-id => $test.github-id,
         status => $gh-status,
         :$completed-at,
         :$conclusion,

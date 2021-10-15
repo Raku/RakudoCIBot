@@ -35,6 +35,7 @@ submethod TWEAK() {
         processor => $!requester,
     ;
     $!requester.github-interface = $!github-interface;
+    $!testset-manager.register-status-listener($!requester);
     $!obs-interface .= new:
         user     => %*ENV<OBS_USER>,
         password => %*ENV<OBS_PASSWORD>,
@@ -45,6 +46,7 @@ submethod TWEAK() {
         interface => $!obs-interface,
         :$!testset-manager,
     ;
+    $!testset-manager.register-test-set-listener($!obs);
 }
 
 method start-ticking() {

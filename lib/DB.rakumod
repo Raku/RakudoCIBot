@@ -73,7 +73,7 @@ model CITest is rw is table<citest> {
     has Str                      $.name                  is column;
     has DateTime                 $.creation              is column .= now;
     has UInt                     $!fk-platform-test-set  is referencing( *.id, :model(DB::CIPlatformTestSet) );
-    has DB::CITestSet            $.platform-test-set     is relationship( *.fk-platform-test-set );
+    has DB::CIPlatformTestSet    $.platform-test-set     is relationship( *.fk-platform-test-set );
     has DateTime                 $.test-started-at       is column{ :nullable };
     has DateTime                 $.test-finished-at      is column{ :nullable };
     has DB::CITestStatus         $.status                is column = NOT_STARTED;

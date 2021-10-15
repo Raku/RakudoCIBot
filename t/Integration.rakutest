@@ -1,0 +1,156 @@
+use Test;
+use Test::Mock;
+use Red:api<2>;
+use File::Temp;
+use DB;
+use Config;
+use GitHubInterface;
+use GitHubCITestRequester;
+use CITestSetManager;
+use OBSInterface;
+use OBS;
+use SourceArchiveCreator;
+
+
+my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
+
+# In memory, ephemeral DB.
+red-defaults("SQLite");
+DB::create-db();
+#my $*RED-DEBUG = True;
+#my $*RED-DEBUG-RESPONSE = True;
+
+# Disable background worklist processing. Makes the tests reproducible.
+my $*SERIAL_DEDUP_NO_THREADING = True;
+
+# Disable limiters so we can reliably guide processing of the work list.
+$Config::obs-check-duration = 0;
+$Config::obs-min-run-duration = 0;
+
+my $dummy-src-id = "some dummy id";
+my $dummy-src-path = "/some/path";
+my $dummy-log = "Build Succeeded! Yay!";
+
+my $github-interface = mocked(GitHubInterface,
+    returning => {
+        create-check-run => 1528,
+    }
+);
+my $obs-interface = mocked(OBSInterface,
+    returning => {
+        build-log => $dummy-log,
+        sources => (
+        OBSInterface::OBSSource.new(
+            name  => "PTS-ID-1",
+            md5   => "132c30c59034d993b3252795d6eb1824",
+            size  => 256790,
+            mtime => 1609676194,
+            ),
+        )
+    },
+    computing => {
+        builds => {
+            state $c = -1; $c++;
+            $c == 0 ?? (
+            OBSInterface::OBSResult.new(
+                project    => "home:patrickbkr:raku-ci",
+                repository => "openSUSE_Leap_15.3",
+                arch       => "x86_64",
+                code       => "published",
+                state      => "published",
+                status     => { moarvm        => "building",
+                                nqp-moarvm    => "building",
+                                rakudo-moarvm => "building" }),
+            )
+            !! (
+            OBSInterface::OBSResult.new(
+                project    => "home:patrickbkr:raku-ci",
+                repository => "openSUSE_Leap_15.3",
+                arch       => "x86_64",
+                code       => "published",
+                state      => "published",
+                status     => { moarvm        => "succeeded",
+                                nqp-moarvm    => "succeeded",
+                                rakudo-moarvm => "succeeded" }),
+            )
+        }
+    },
+);
+
+my $source-archive-creator = mocked(SourceArchiveCreator,
+    returning => {
+        create-archive   => $dummy-src-id,
+        get-archive-path => $dummy-src-path,
+    }
+);
+
+my CITestSetManager $testset-manager .= new:
+    :$source-archive-creator,
+;
+
+my GitHubCITestRequester $requester .= new:
+    :$testset-manager,
+    :$github-interface,
+;
+$testset-manager.register-status-listener($requester);
+
+my OBS $obs .= new:
+    :$source-archive-creator,
+    :$work-dir,
+    interface => $obs-interface,
+    :$testset-manager,
+;
+$testset-manager.register-test-set-listener($obs);
+
+$requester.add-task: GitHubCITestRequester::PRTask.new:
+    project      => "rakudo",
+    git-url      => "https://github.com/usev6/rakudo.git",
+    head-branch  => "jvm_phasers_new-disp",
+    number       => 4574,
+    title        => "[JVM] Restore pre-new-disp behaviour for phasers",
+    body         => "Lalala hie a hiea.",
+    state        => "OPEN",
+    user-url     => "https://github.com/rakudo/rakudo/pull/4574",
+    commit-task  => GitHubCITestRequester::PRCommitTask.new(
+        project      => "rakudo",
+        pr-number    => 4574,
+        commit-sha   => "9ca813b7c4c8e429eb4da637aefd953f89f8af22",
+        user-url     => "https://github.com/patrickbkr/GitHub-API-Testing/pull/4574/commits/9ca813b7c4c8e429eb4da637aefd953f89f8af22",
+    ),
+;
+
+check-mock($obs-interface,
+    *.called("upload-file", with => :("moarvm", $, *%), :3times),
+    *.called("commit", with => :("moarvm")),
+    *.called("upload-file", with => :("nqp-moarvm", $, *%), :3times),
+    *.called("commit", with => :("nqp-moarvm")),
+    *.called("upload-file", with => :("rakudo-moarvm", $, *%), :3times),
+    *.called("commit", with => :("rakudo-moarvm")),
+    *.called("builds", :1times),
+);
+
+check-mock($github-interface,
+    *.called("create-check-run", with => :(
+        :$owner! where "usev6",
+        :$repo!  where "rakudo",
+        Str:D :$name!,
+        :$sha!   where "9ca813b7c4c8e429eb4da637aefd953f89f8af22",
+        :$url!,
+        :$id!,
+        DateTime:D :$started-at!,
+    ))
+);
+
+$obs.process-worklist();
+check-mock($github-interface,
+    *.called("update-check-run", with => :(
+        :$owner! where "usev6",
+        :$repo!  where "rakudo",
+        :$check-run-id! where 1528,
+        :$status! where "completed",
+        DateTime:D :$completed-at!,
+        :$conclusion! where "success",
+    ))
+);
+
+done-testing;

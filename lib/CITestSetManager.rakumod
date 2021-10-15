@@ -39,7 +39,7 @@ method process-worklist() is serial-dedup {
             }
             when DB::SOURCE_ARCHIVE_CREATED {
                 for $!test-set-listeners.keys {
-                    $_.new-test-set(:$test-set)
+                    $_.new-test-set($test-set)
                 }
                 $test-set.status = DB::WAITING_FOR_TEST_RESULTS;
                 $test-set.^save;
