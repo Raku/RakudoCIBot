@@ -17,8 +17,6 @@
       "Test::SourceFiles",
       "File::Temp",
       "Test::Mock",
-      "Test::Scheduler",
-      "Cro::HTTP::Test",
       "JSON::Fast"
   ],
   "description": null,
