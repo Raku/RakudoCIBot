@@ -10,6 +10,8 @@ use OBS;
 use DB;
 use Red:api<2>;
 
+set-config($*PROGRAM.parent.add("data/config-test.yml"));
+
 my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
 
 # Fast, in memory, ephemeral DB.
@@ -21,13 +23,8 @@ DB::create-db();
 # Disable background worklist processing. Makes the tests reproducible.
 my $*SERIAL_DEDUP_NO_THREADING = True;
 
-# Disable limiters so we can reliably guide processing of the work list.
-$Config::obs-check-duration = 0;
-$Config::obs-min-run-duration = 0;
-
 ### Mocks
 
-my $dummy-id = "some dummy id";
 my $dummy-path = "/some/path";
 my $dummy-log = "Build Succeeded! Yay!";
 my $archive-id = "hieapu";

@@ -3,9 +3,12 @@ use Test::Mock;
 use DB;
 use Red:api<2>;
 
+use Config;
 use GitHubCITestRequester;
 use GitHubInterface;
 use CITestSetManager;
+
+set-config($*PROGRAM.parent.add("data/config-test.yml"));
 
 # Fast, in memory, ephemeral DB.
 red-defaults("SQLite");

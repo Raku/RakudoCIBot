@@ -20,7 +20,7 @@ submethod TWEAK(:$app-id!, IO::Path :$pem-file!) {
 
     $!gh .= new:
         app-auth   => $!gh-auth,
-        install-id => %Config::projects<rakudo><install-id>,
+        install-id => config.projects<rakudo><install-id>,
     ;
 }
 

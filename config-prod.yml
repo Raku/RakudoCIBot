@@ -1,0 +1,34 @@
+github-app-id: "87729"
+projects:
+    rakudo:
+        project: rakudo
+        repo: rakudo
+        slug: rakudo/rakudo
+        install-id: 20243470
+    nqp:
+        project: Raku
+        repo: nqp
+        slug: Raku/nqp
+        install-id: 20243470
+    moar:
+        project: MoarVM
+        repo: MoarVM
+        slug: MoarVM/MoarVM
+        install-id: 20243470
+
+obs-check-duration: 300 # 5 * 60
+obs-min-run-duration: 300 # 5 * 60
+obs-packages:
+  - moarvm
+  - nqp-moarvm
+  - rakudo-moarvm
+
+github-pullrequest-check-count: 15
+
+sac-work-dir: work/sac-work
+sac-store-dir: work/sac-store
+obs-work-dir: work/obs-work
+
+testset-manager-interval: 300 # 5 * 60
+github-requester-interval: 300 # 5 * 60
+obs-interval: 300 # 5 * 60

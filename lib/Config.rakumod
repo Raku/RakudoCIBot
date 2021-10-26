@@ -1,61 +1,55 @@
-unit module Config;
+use YAMLish;
 
-our $github-app-id = "87729";
-#`[
-our %projects =
-    rakudo => {
-        project => "rakudo",
-        repo    => "rakudo",
-        slug    => "rakudo/rakudo",
-        install-id => 20243470,
-    },
-    nqp => {
-        project => "Raku",
-        repo => "nqp",
-        slug => "Raku/nqp",
-        install-id => 20243470,
-    },
-    moar => {
-        project => "MoarVM",
-        repo    => "MoarVM",
-        slug    => "MoarVM/MoarVM",
-        install-id => 20243470,
-    },
-;
-]
-our %projects =
-    rakudo => {
-        project => "patrickbkr",
-        repo    => "rakudo",
-        slug    => "patrickbkr/rakudo",
-        install-id => 20243470,
-    },
-    nqp => {
-        project => "patrickbkr",
-        repo => "nqp",
-        slug => "patrickbkr/nqp",
-        install-id => 20243470,
-    },
-    moar => {
-        project => "patrickbkr",
-        repo    => "MoarVM",
-        slug    => "patrickbkr/MoarVM",
-        install-id => 20243470,
-    },
-;
+class Config {
+    has $.github-app-id;
+    has %.projects;
 
-our $obs-check-duration = 5 * 60;
-our $obs-min-run-duration = 5 * 60;
-our @obs-packages = < moarvm nqp-moarvm rakudo-moarvm >;
+    has $.obs-check-duration;
+    has $.obs-min-run-duration;
+    has @.obs-packages;
 
-#| How many latest-changes-PullRequests the GitHub polling logic should retrieve.
-our $github-pullrequest-check-count = 15;
+    #| How many latest-changes-PullRequests the GitHub polling logic should retrieve.
+    has $.github-pullrequest-check-count;
 
-our $sac-work-dir = $*PROGRAM.parent.add("work/sac-work").IO;
-our $sac-store-dir = $*PROGRAM.parent.add("work/sac-store").IO;
-our $obs-work-dir = $*PROGRAM.parent.add("work/obs-work").IO;
+    has $.sac-work-dir;
+    has $.sac-store-dir;
+    has $.obs-work-dir;
 
-our $testset-manager-interval = 5 * 60;
-our $github-requester-interval = 5 * 60;
-our $obs-interval = 5 * 60;
+    has $.testset-manager-interval;
+    has $.github-requester-interval;
+    has $.obs-interval;
 
+    method from-config(%config) {
+        Config.new:
+            github-app-id => %config<github-app-id>,
+            projects      => %config<projects>,
+
+            obs-check-duration   => %config<obs-check-duration>,
+            obs-min-run-duration => %config<obs-min-run-duration>,
+            obs-packages         => %config<obs-packages>,
+
+            github-pullrequest-check-count => %config<github-pullrequest-check-count>,
+
+            sac-work-dir  => %config<sac-work-dir>,
+            sac-store-dir => %config<sac-store-dir>,
+            obs-work-dir  => %config<obs-work-dir>,
+
+            testset-manager-interval  => %config<testset-manager-interval>,
+            github-requester-interval => %config<github-requester-interval>,
+            obs-interval              => %config<obs-interval>,
+        ;
+    }
+}
+
+my Config $config;
+multi set-config(Config $c) is export {
+    $config = $c
+}
+
+multi set-config(IO::Path $yaml-file) is export {
+    set-config(Config.from-config(load-yaml($yaml-file.slurp)));
+}
+
+sub config(--> Config) is export {
+    $config;
+}

@@ -63,7 +63,7 @@ method process-worklist() is serial-dedup {
         }
     }
     # @running-ptses.elems == 1
-    elsif DateTime.now - @running-ptses[0].obs-last-check-time >= $Config::obs-check-duration {
+    elsif DateTime.now - @running-ptses[0].obs-last-check-time >= config.obs-check-duration {
         # Still have a test set we are working on and it's time to have a look at it again.
         $running-pts = @running-ptses[0];
 
@@ -117,7 +117,7 @@ method process-worklist() is serial-dedup {
                 $test.test-finished-at //= DateTime.now;
                 $test.log //= do {
                     my $log;
-                    for @Config::obs-packages.map({ $_, $!interface.build-log($_, $build.arch, $build.repository) }).flat -> $package, $pack-log {
+                    for config.obs-packages.map({ $_, $!interface.build-log($_, $build.arch, $build.repository) }).flat -> $package, $pack-log {
                         $log ~= qq:to/EOF/;
                         ================================================================================
                                                           $package
@@ -148,7 +148,7 @@ method process-worklist() is serial-dedup {
                 $_.platform-test-set.id == $running-pts.id &&
                 $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS)
                 }) == 0
-                && DateTime.now - $running-pts.obs-started-at > $Config::obs-min-run-duration {
+                && DateTime.now - $running-pts.obs-started-at > config.obs-min-run-duration {
             $running-pts.status = DB::PLATFORM_DONE;
             $running-pts.obs-finished-at = DateTime.now;
             $running-pts.^save;

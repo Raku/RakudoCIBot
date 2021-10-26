@@ -21,9 +21,11 @@ submethod TWEAK() {
     die 'set OBS_USER environment variable'            unless %*ENV<OBS_USER>;
     die 'set OBS_PASSWORD environment variable'        unless %*ENV<OBS_PASSWORD>;
 
+    set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
+
     $!source-archive-creator .= new:
-        work-dir => $Config::sac-work-dir,
-        store-dir => $Config::sac-store-dir,
+        work-dir => config.sac-work-dir,
+        store-dir => config.sac-store-dir,
     ;
     $!testset-manager .= new:
         :$!source-archive-creator,
@@ -43,7 +45,7 @@ submethod TWEAK() {
     ;
     $!obs .= new:
         :$!source-archive-creator,
-        work-dir => $Config::obs-work-dir,
+        work-dir => config.obs-work-dir,
         interface => $!obs-interface,
         :$!testset-manager,
     ;
@@ -54,13 +56,13 @@ method start-ticking() {
     die "Already ticking" if $!running;
     $!running = Promise.new();
     start react {
-        whenever Supply.interval($Config::testset-manager-interval) {
+        whenever Supply.interval(config.testset-manager-interval) {
             $!testset-manager.process-worklist;
         }
-        whenever Supply.interval($Config::github-requester-interval) {
+        whenever Supply.interval(config.github-requester-interval) {
             $!github-interface.process-worklist;
         }
-        whenever Supply.interval($Config::obs-interval) {
+        whenever Supply.interval(config.obs-interval) {
             $!obs.process-worklist;
         }
         whenever $!running {

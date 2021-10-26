@@ -12,7 +12,8 @@
       "OO::Monitors:ver<1.1.1>",
       "Red:ver<0.1.47>",
       "Log::Async:ver<0.0.7>",
-      "JSON::JWT:ver<1.0>"
+      "JSON::JWT:ver<1.0>",
+      "YAMLish:ver<0.0.6>"
   ],
   "test-depends": [
       "Test::SourceFiles",

@@ -1,11 +1,14 @@
 use Test;
 use Test::Mock;
 
+use Config;
 use SourceArchiveCreator;
 use CITestStatusListener;
 use CITestSetManager;
 use DB;
 use Red:api<2>;
+
+set-config($*PROGRAM.parent.add("data/config-test.yml"));
 
 # Fast, in memory, ephemeral DB.
 red-defaults("SQLite");

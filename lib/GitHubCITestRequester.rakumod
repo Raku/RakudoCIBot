@@ -108,9 +108,9 @@ method !process-pr-comment-task(PRCommentTask $comment) {
 }
 
 method poll-for-changes() is serial-dedup {
-    for %Config::projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
+    for config.projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
         # PRs
-        self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, $Config::github-pullrequest-check-count);
+        self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, config.github-pullrequest-check-count);
     }
 }
 

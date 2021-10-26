@@ -2,6 +2,7 @@ use Test;
 use Test::Mock;
 use Red:api<2>;
 use File::Temp;
+
 use DB;
 use Config;
 use GitHubInterface;
@@ -11,6 +12,7 @@ use OBSInterface;
 use OBS;
 use SourceArchiveCreator;
 
+set-config($*PROGRAM.parent.add("data/config-test.yml"));
 
 my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
 
@@ -22,10 +24,6 @@ DB::create-db();
 
 # Disable background worklist processing. Makes the tests reproducible.
 my $*SERIAL_DEDUP_NO_THREADING = True;
-
-# Disable limiters so we can reliably guide processing of the work list.
-$Config::obs-check-duration = 0;
-$Config::obs-min-run-duration = 0;
 
 my $dummy-src-id = "some dummy id";
 my $dummy-src-path = "/some/path";
