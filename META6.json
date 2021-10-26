@@ -44,8 +44,7 @@
       "SerialDedup": "lib/SerialDedup.rakumod",
       "OBS": "lib/OBS.rakumod",
       "OBSInterface": "lib/OBSInterface.rakumod",
-      "Config": "lib/Config.rakumod",
-      "GitHubAppAuth": "lib/GitHubAppAuth.rakumod"
+      "Config": "lib/Config.rakumod"
   },
   "resources": [
       "moarvm.spec",
