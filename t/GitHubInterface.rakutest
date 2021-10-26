@@ -9,7 +9,7 @@ my $data-dir = $*PROGRAM.parent.add('data');
 
 my $processor = mocked(GitHubCITestRequester);
 
-my GitHubInterface $parser .= new(:$processor, :pat("dummy-PAT"));
+my GitHubInterface $parser .= new(:app-id(123456), :$processor, :pem-file($data-dir.add("dummy.pem")));
 
 $parser.parse-hook-request('pull_request', from-json $data-dir.add("webhook-github-create-pull.body").slurp);
 check-mock($processor,

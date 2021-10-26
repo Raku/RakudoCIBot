@@ -185,6 +185,7 @@ method tests-queued(@tests) {
     for @tests -> $test {
         my $ts = $test.platform-test-set.test-set;
         my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
+
         $test.github-id = $!github-interface.create-check-run(
             owner      => %project-and-repo<project>,
             repo       => %project-and-repo<repo>,
@@ -195,6 +196,8 @@ method tests-queued(@tests) {
             started-at => DateTime.now,
         );
         $test.^save;
+
+        #say "Queueing test {$test.name}: {%project-and-repo<project>}/{%project-and-repo<repo>} {$ts.commit-sha}";
     }
 }
 
@@ -219,6 +222,7 @@ method test-status-changed($test) {
     }
 
     my $ts = $test.platform-test-set.test-set;
+
     my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
     $!github-interface.update-check-run(
         owner      => %project-and-repo<project>,
@@ -228,8 +232,12 @@ method test-status-changed($test) {
         :$completed-at,
         :$conclusion,
     );
+
+    #say "Updating test {$test.name}: {$gh-status}";
 }
 
 method test-set-done($test-set) {
-    # TODO
+    # GitHub has no concept of a completed check run suite.
+    # So we don't need to tell GitHub, that we are done.
+    # So there is nothing to do here.
 }

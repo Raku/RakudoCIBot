@@ -11,7 +11,8 @@
       "Base64:ver<0.0.2>",
       "OO::Monitors:ver<1.1.1>",
       "Red:ver<0.1.47>",
-      "Log::Async:ver<0.0.7>"
+      "Log::Async:ver<0.0.7>",
+      "JSON::JWT:ver<1.0>"
   ],
   "test-depends": [
       "Test::SourceFiles",
@@ -42,7 +43,8 @@
       "SerialDedup": "lib/SerialDedup.rakumod",
       "OBS": "lib/OBS.rakumod",
       "OBSInterface": "lib/OBSInterface.rakumod",
-      "Config": "lib/Config.rakumod"
+      "Config": "lib/Config.rakumod",
+      "GitHubAppAuth": "lib/GitHubAppAuth.rakumod"
   },
   "resources": [
       "moarvm.spec",

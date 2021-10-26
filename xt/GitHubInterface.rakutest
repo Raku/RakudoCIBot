@@ -1,25 +1,17 @@
 use Test;
-use WebService::GitHub::Pulls;
+use Test::Mock;
+use Config;
 
+use GitHubCITestRequester;
 use GitHubInterface;
 
-die 'export GITHUB_ACCESS_TOKEN' unless %*ENV<GITHUB_ACCESS_TOKEN>;
+die 'export PEM-FILE' unless %*ENV<GITHUB_PEM_FILE>;
 
-class MockGitHubCITestRequester {
-    method new-pr(:$pr-number, :$user-url, :$body, :$from-repo, :$from-branch, :$to-repo, :$to-branch) { ... }
-    method new-pr-comment(:$repo, :$pr-number, :$comment-id, :$comment-text, :$user-url) { ... }
-    method new-pr-commit(:$repo, :$branch, :$project, :$pr-number, :$commit-sha, :$user-url) { ... }
-    method new-main-commit(:$repo!, :$branch!, :$commit-sha!, :$user-url!) { ... }
-    method new-commit-comment(:$repo, :$commit-sha, :$comment-id, :$comment-text, :$user-url) {}
-    method new-retest-command(:$project, :$pr-number, :$comment-id, :$user-url) {}
-    method tests-queued(@tests) { ... }
-    method test-status-changed($test) { ... }
-    method test-set-done($test-set) { ... }
-}
-my MockGitHubCITestRequester $mock-requester .= new;
+my GitHubCITestRequester $mock-requester = mocked(GitHubCITestRequester);
 
 my GitHubInterface $interface .= new:
-    pat => %*ENV<GITHUB_ACCESS_TOKEN>,
+    app-id    => $Config::github-app-id,
+    pem-file  => %*ENV<GITHUB_PEM_FILE>.IO,
     processor => $mock-requester;
 
 my %commits = $interface.retrieve-default-branch-commits("rakudo", "rakudo", DateTime.now.earlier(:2days));

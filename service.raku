@@ -36,6 +36,7 @@ react {
     whenever signal(SIGINT) {
         say "Shutting down...";
         #$http.stop;
+        $bot.stop-ticking;
         done;
     }
 }

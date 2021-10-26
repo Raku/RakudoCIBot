@@ -19,7 +19,7 @@ my $*SERIAL_DEDUP_NO_THREADING = True;
 # cp = CI platform
 class TestCIPlatform {
     has $.test-set;
-    method new-test-set(:$!test-set) {}
+    method new-test-set($!test-set) {}
 }
 
 class TestCITestStatusListener does CITestStatusListener {

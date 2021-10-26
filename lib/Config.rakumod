@@ -1,20 +1,46 @@
 unit module Config;
 
+our $github-app-id = "87729";
+#`[
 our %projects =
     rakudo => {
         project => "rakudo",
         repo    => "rakudo",
         slug    => "rakudo/rakudo",
+        install-id => 20243470,
     },
     nqp => {
         project => "Raku",
         repo => "nqp",
         slug => "Raku/nqp",
+        install-id => 20243470,
     },
     moar => {
         project => "MoarVM",
         repo    => "MoarVM",
         slug    => "MoarVM/MoarVM",
+        install-id => 20243470,
+    },
+;
+]
+our %projects =
+    rakudo => {
+        project => "patrickbkr",
+        repo    => "rakudo",
+        slug    => "patrickbkr/rakudo",
+        install-id => 20243470,
+    },
+    nqp => {
+        project => "patrickbkr",
+        repo => "nqp",
+        slug => "patrickbkr/nqp",
+        install-id => 20243470,
+    },
+    moar => {
+        project => "patrickbkr",
+        repo    => "MoarVM",
+        slug    => "patrickbkr/MoarVM",
+        install-id => 20243470,
     },
 ;
 

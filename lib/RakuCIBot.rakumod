@@ -14,6 +14,7 @@ has GitHubCITestRequester $!requester;
 has CITestSetManager $!testset-manager;
 has OBSInterface $!obs-interface;
 has OBS $!obs;
+has Promise $!running;
 
 submethod TWEAK() {
     die 'set GITHUB_ACCESS_TOKEN environment variable' unless %*ENV<GITHUB_ACCESS_TOKEN>;
@@ -50,13 +51,25 @@ submethod TWEAK() {
 }
 
 method start-ticking() {
-    Supply.interval($Config::testset-manager-interval).tap: {
-        $!testset-manager.process-worklist;
+    die "Already ticking" if $!running;
+    $!running = Promise.new();
+    start react {
+        whenever Supply.interval($Config::testset-manager-interval) {
+            $!testset-manager.process-worklist;
+        }
+        whenever Supply.interval($Config::github-requester-interval) {
+            $!github-interface.process-worklist;
+        }
+        whenever Supply.interval($Config::obs-interval) {
+            $!obs.process-worklist;
+        }
+        whenever $!running {
+            done()
+        }
     }
-    Supply.interval($Config::github-requester-interval).tap: {
-        $!github-interface.process-worklist;
-    }
-    Supply.interval($Config::obs-interval).tap: {
-        $!obs.process-worklist;
-    }
+}
+
+method stop-ticking() {
+    $!running.keep;
+    $!running = Nil;
 }

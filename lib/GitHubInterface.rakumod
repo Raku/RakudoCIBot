@@ -1,24 +1,28 @@
 unit class GitHubInterface;
 
+use Config;
 use Log::Async;
-use WebService::GitHub::Checks::Runs;
+use WebService::GitHub::AppAuth;
+use WebService::GitHub;
 use Cro::HTTP::Client;
 use GitHubCITestRequester;
 
 constant $gql-endpoint = "https://api.github.com/graphql";
-
-has $!pat is built is required;
-
-has Cro::HTTP::Client $!cro .= new:
-    content-type => 'application/json',
-    headers => [
-        Authorization => "bearer $!pat",
-    ];
-
-has $!gh-runs = WebService::GitHub::Checks::Runs.new:
-    access-token => $!pat;
-
+has WebService::GitHub::AppAuth $!gh-auth;
+has WebService::GitHub $!gh;
 has GitHubCITestRequester $.processor is required;
+
+submethod TWEAK(:$app-id!, IO::Path :$pem-file!) {
+    $!gh-auth .= new:
+        :$app-id,
+        pem => $pem-file.slurp
+    ;
+
+    $!gh .= new:
+        app-auth   => $!gh-auth,
+        install-id => %Config::projects<rakudo><install-id>,
+    ;
+}
 
 method parse-hook-request($event, %json) {
     given $event {
@@ -90,16 +94,18 @@ method parse-hook-request($event, %json) {
     }
 }
 
+#`[
 method !req-graphql($query) {
     my $response = await $!cro.post($gql-endpoint, body => {
         :$query;
     });
     await $response.body;
 }
+]
 
 method retrieve-default-branch-commits($project, $repo, DateTime $since) {
     my $since-str = $since.Str;
-    self!req-graphql: q:to<EOQ>;
+    $!gh.graphql.query(q:to<EOQ>).data;
         {
           repository(name: "\qq[$repo]", owner: "\qq[$project]") {
             defaultBranchRef {
@@ -131,7 +137,7 @@ method retrieve-default-branch-commits($project, $repo, DateTime $since) {
 }
 
 method retrieve-default-branch-comments($repo, $project) {
-    self!req-graphql: q:to<EOQ>;
+    $!gh.graphql.query(q:to<EOQ>).data;
         {
           repository(name: "\qq[$repo]", owner: "\qq[$project]") {
             commitComments(last: 10, after: "Y3Vyc29yOnYyOpHOAzEv0w==") {
@@ -157,7 +163,7 @@ method retrieve-default-branch-comments($repo, $project) {
 }
 
 method retrieve-pulls($project, $repo, $count) {
-    my %data = self!req-graphql: q:to<EOQ>;
+    my %data = $!gh.graphql.query(q:to<EOQ>).data;
         {
           repository(name: "\qq[$repo]", owner: "\qq[$project]") {
             pullRequests(first: \qq[$count], orderBy: {direction: DESC, field: UPDATED_AT}) {
@@ -204,7 +210,7 @@ method retrieve-pulls($project, $repo, $count) {
             body         => %pull-data<body>,
             state        => %pull-data<state>,
             user-url     => %pull-data<url>,
-            comments     => %pull-data<comments><nodes>.map: {
+            comments     => %pull-data<comments><nodes>.map({
                 GitHubCITestRequester::PRCommentTask.new:
                     id         => $_<id>,
                     created-at => $_<createdAt>,
@@ -212,7 +218,7 @@ method retrieve-pulls($project, $repo, $count) {
                     pr-number  => %pull-data<number>,
                     user-url   => $_<url>,
                     body       => $_<body>,
-            },
+            }),
             commit-task  => GitHubCITestRequester::PRCommitTask.new(
                 :$project,
                 pr-number => %pull-data<number>,
@@ -224,14 +230,14 @@ method retrieve-pulls($project, $repo, $count) {
 }
 
 method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, :$id!, DateTime:D :$started-at!) {
-    my $data = $!gh-runs.create($owner, $repo, $sha, $name, :details-url($url), :external-id($id), :started-at($started-at.Str));
+    my $data = $!gh.checks-runs.create($owner, $repo, $sha, $name, :details-url($url), :external-id($id), :started-at($started-at.Str)).data;
     return $data<id>;
 }
 
 method update-check-run(:$owner!, :$repo!, :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
-    $!gh-runs.update($owner, $repo, $check-run-id,
+    $!gh.checks-runs.update($owner, $repo, $check-run-id,
         :$status,
         :completed-at($completed-at.Str),
         :$conclusion
-    )
+    ).data
 }

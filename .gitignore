@@ -1,4 +1,5 @@
 config.yml
+*.pem
 .precomp/
 TODO.md
 posts/
