@@ -1,6 +1,7 @@
-config.yml
 *.pem
 .precomp/
-TODO.md
+config-dev.yml
+run.sh
+
 posts/
 
