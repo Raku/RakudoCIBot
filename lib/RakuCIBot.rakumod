@@ -17,11 +17,13 @@ has OBS $!obs;
 has Promise $!running;
 
 submethod TWEAK() {
-    die 'set GITHUB_ACCESS_TOKEN environment variable' unless %*ENV<GITHUB_ACCESS_TOKEN>;
-    die 'set OBS_USER environment variable'            unless %*ENV<OBS_USER>;
-    die 'set OBS_PASSWORD environment variable'        unless %*ENV<OBS_PASSWORD>;
+    die 'set OBS_PASSWORD environment variable' unless %*ENV<OBS_PASSWORD>;
 
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
+
+    my $gh-pem = %*ENV<GITHUB_PEM> ?? %*ENV<GITHUB_PEM> !!
+                 config.github-app-key-file ?? config.github-app-key-file.IO.slurp !!
+                 die 'Neither GITHUB_PEM environment variable nor config entry github-app-key-file given.';
 
     $!source-archive-creator .= new:
         work-dir => config.sac-work-dir,
@@ -34,13 +36,14 @@ submethod TWEAK() {
         :$!testset-manager,
     ;
     $!github-interface .= new:
-        pat => %*ENV<GITHUB_ACCESS_TOKEN>,
+        app-id => config.github-app-id,
+        pem => $gh-pem,
         processor => $!requester,
     ;
     $!requester.github-interface = $!github-interface;
     $!testset-manager.register-status-listener($!requester);
     $!obs-interface .= new:
-        user     => %*ENV<OBS_USER>,
+        user     => config.obs-user,
         password => %*ENV<OBS_PASSWORD>,
     ;
     $!obs .= new:

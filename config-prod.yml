@@ -1,4 +1,5 @@
 github-app-id: "87729"
+github-app-key-file: "rakucibot.2020-11-06.private-key.pem"
 projects:
     rakudo:
         project: rakudo
@@ -15,6 +16,8 @@ projects:
         repo: MoarVM
         slug: MoarVM/MoarVM
         install-id: 20243470
+
+obs-user: patrickbkr
 
 obs-check-duration: 300 # 5 * 60
 obs-min-run-duration: 300 # 5 * 60

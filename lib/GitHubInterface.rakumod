@@ -12,10 +12,10 @@ has WebService::GitHub::AppAuth $!gh-auth;
 has WebService::GitHub $!gh;
 has GitHubCITestRequester $.processor is required;
 
-submethod TWEAK(:$app-id!, IO::Path :$pem-file!) {
+submethod TWEAK(:$app-id!, :$pem!) {
     $!gh-auth .= new:
         :$app-id,
-        pem => $pem-file.slurp
+        :$pem
     ;
 
     $!gh .= new:

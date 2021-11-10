@@ -2,7 +2,10 @@ use YAMLish;
 
 class Config {
     has $.github-app-id;
+    has $.github-app-key-file;
     has %.projects;
+
+    has $.obs-user;
 
     has $.obs-check-duration;
     has $.obs-min-run-duration;
@@ -21,8 +24,11 @@ class Config {
 
     method from-config(%config) {
         Config.new:
-            github-app-id => %config<github-app-id>,
-            projects      => %config<projects>,
+            github-app-id       => %config<github-app-id>,
+            github-app-key-file => %config<github-app-key-file>,
+            projects            => %config<projects>,
+
+            obs-user => %config<obs-user>,
 
             obs-check-duration   => %config<obs-check-duration>,
             obs-min-run-duration => %config<obs-min-run-duration>,
