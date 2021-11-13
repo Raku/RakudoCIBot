@@ -63,15 +63,22 @@ Then call the following script to determine your installation ID:
 Edit the `config-dev.yml` file again and replace the `installation-id` for all three projects with the ID determined above.
 
 
+Setup the database
+------------------
+
+    raku -I. misc/setup-database.raku config-dev.yml
+
+
+Setup OBS
+---------
+
+- register
+- set up projects
+
+
 Download ngrok
 --------------
 
+- download and start
+- fill in hook URL on GitHub
 
-
-- ngrok runterladen und starten
-- GitHub App erstellen
-    - Rechte erteilen
-    - Hook URL ausfüllen
-- OBS registrieren
-    - Projekte anlegen
-- Config befüllen

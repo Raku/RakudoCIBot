@@ -1,7 +1,9 @@
 *.pem
 .precomp/
+.idea/
 config-dev.yml
 run.sh
+work/
 
 posts/
 

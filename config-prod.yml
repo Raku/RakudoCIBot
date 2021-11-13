@@ -1,3 +1,10 @@
+db:
+    host: localhost
+    port: 5432
+    dbname: rcb
+    user: some_user
+    password: some_pw
+
 github-app-id: "87729"
 github-app-key-file: "rakucibot.2020-11-06.private-key.pem"
 projects:
@@ -17,7 +24,8 @@ projects:
         slug: MoarVM/MoarVM
         install-id: 20243470
 
-obs-user: patrickbkr
+obs-user: some_user
+obs-password: "some_pw"
 
 obs-check-duration: 300 # 5 * 60
 obs-min-run-duration: 300 # 5 * 60

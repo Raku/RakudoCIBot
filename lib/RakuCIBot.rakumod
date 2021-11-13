@@ -1,6 +1,7 @@
 unit class RakuCIBot;
 
 use Config;
+use Red::Operators:api<2>;
 use GitHubInterface;
 use GitHubCITestRequester;
 use CITestSetManager;
@@ -17,17 +18,20 @@ has OBS $!obs;
 has Promise $!running;
 
 submethod TWEAK() {
-    die 'set OBS_PASSWORD environment variable' unless %*ENV<OBS_PASSWORD>;
-
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
+
+    red-defaults('Pg', |%(
+        config.db,
+        host => config.db<host> || Str
+    ));
 
     my $gh-pem = %*ENV<GITHUB_PEM> ?? %*ENV<GITHUB_PEM> !!
                  config.github-app-key-file ?? config.github-app-key-file.IO.slurp !!
                  die 'Neither GITHUB_PEM environment variable nor config entry github-app-key-file given.';
 
     $!source-archive-creator .= new:
-        work-dir => config.sac-work-dir,
-        store-dir => config.sac-store-dir,
+        work-dir => config.sac-work-dir.IO,
+        store-dir => config.sac-store-dir.IO,
     ;
     $!testset-manager .= new:
         :$!source-archive-creator,
@@ -44,11 +48,11 @@ submethod TWEAK() {
     $!testset-manager.register-status-listener($!requester);
     $!obs-interface .= new:
         user     => config.obs-user,
-        password => %*ENV<OBS_PASSWORD>,
+        password => config.obs-password,
     ;
     $!obs .= new:
         :$!source-archive-creator,
-        work-dir => config.obs-work-dir,
+        work-dir => config.obs-work-dir.IO,
         interface => $!obs-interface,
         :$!testset-manager,
     ;
@@ -57,13 +61,14 @@ submethod TWEAK() {
 
 method start-ticking() {
     die "Already ticking" if $!running;
+
     $!running = Promise.new();
     start react {
         whenever Supply.interval(config.testset-manager-interval) {
             $!testset-manager.process-worklist;
         }
         whenever Supply.interval(config.github-requester-interval) {
-            $!github-interface.process-worklist;
+            $!requester.process-worklist;
         }
         whenever Supply.interval(config.obs-interval) {
             $!obs.process-worklist;
