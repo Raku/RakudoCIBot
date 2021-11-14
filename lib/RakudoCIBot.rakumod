@@ -80,6 +80,7 @@ method start() {
             $!testset-manager.process-worklist;
         }
         whenever Supply.interval(config.github-requester-interval) {
+            $!requester.poll-for-changes;
             $!requester.process-worklist;
         }
         whenever Supply.interval(config.obs-interval) {
