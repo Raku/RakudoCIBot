@@ -35,8 +35,8 @@ WORKDIR /app
 
 ENV PATH=$PATH:/usr/local/share/perl6/site/bin
 
-ENV RAKUCIBOT_ORG_PORT="10000" \
-    RAKUCIBOT_ORG_HOST="0.0.0.0"
+ENV RAKUDOCIBOT_ORG_PORT="10000" \
+    RAKUDOCIBOT_ORG_HOST="0.0.0.0"
 
 EXPOSE 10000
 CMD raku -I. service.raku

@@ -1,37 +1,25 @@
 use Cro::HTTP::Router;
 
+use Routes::Home;
+use Routes::GitHubHook;
+use Cro::WebApp::Template;
+
 sub routes() is export {
     route {
-        post -> 'github-hook', :$X-Github-Event! is header where 'pull_request' {
-            request-body -> %json {
-                if %json<action> eq 'opened' {
-                    # Got a new PR. Process.
+        resources-from %?RESOURCES;
+        templates-from-resources prefix => 'templates';
 
-                }
-                say %json;
-                content 'text/txt', 'Hi GitHub PR';
-            }
+        get -> "css", *@path {
+            resource "static/css", @path;
         }
-        post -> 'github-hook', :$X-Github-Event! is header where 'issue_comment' {
-            request-body -> %json {
-                if %json<issue><pull_request>:exists {
-                    content 'text/txt', 'Hi GitHub PR comment';
-                }
-            }
+        get -> "img", *@path {
+            resource "static/img", @path;
         }
-        post -> 'github-hook', :$X-Github-Event! is header where 'push' {
-            request-body -> %json {
-                if %json<head_commit><message>:exists {
-                    content 'text/txt', 'Hi GitHub commit';
-                }
-            }
+        get -> "js", *@path {
+            resource "static/js", @path;
         }
 
-        post -> 'github-hook', :$X-Github-Event! is header {
-            request-body -> %json {
-                say "Unknown event type $X-Github-Event received";
-                content 'text/txt', 'Hi GitHub whatever';
-            }
-        }
+        include home-routes;
+        include github-hook-routes;
     }
 }

@@ -25,6 +25,9 @@ class Config {
     has $.github-requester-interval;
     has $.obs-interval;
 
+    has $.web-host;
+    has $.web-port;
+
     method from-config(%config) {
         Config.new:
             db => %config<db>,
@@ -49,6 +52,9 @@ class Config {
             testset-manager-interval  => %config<testset-manager-interval>,
             github-requester-interval => %config<github-requester-interval>,
             obs-interval              => %config<obs-interval>,
+
+            web-host => %config<web-host>,
+            web-port => %config<web-port>,
         ;
     }
 }

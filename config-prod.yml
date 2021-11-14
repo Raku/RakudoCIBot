@@ -6,7 +6,7 @@ db:
     password: some_pw
 
 github-app-id: "87729"
-github-app-key-file: "rakucibot.2020-11-06.private-key.pem"
+github-app-key-file: "rakudocibot.2020-11-06.private-key.pem"
 projects:
     rakudo:
         project: rakudo
@@ -30,9 +30,9 @@ obs-password: "some_pw"
 obs-check-duration: 300 # 5 * 60
 obs-min-run-duration: 300 # 5 * 60
 obs-packages:
-  - moarvm
-  - nqp-moarvm
-  - rakudo-moarvm
+    - moarvm
+    - nqp-moarvm
+    - rakudo-moarvm
 
 github-pullrequest-check-count: 15
 
@@ -43,3 +43,6 @@ obs-work-dir: work/obs-work
 testset-manager-interval: 300 # 5 * 60
 github-requester-interval: 300 # 5 * 60
 obs-interval: 300 # 5 * 60
+
+web-host: 0.0.0.0
+web-port: 10000

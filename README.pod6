@@ -1,6 +1,6 @@
 =begin pod
 
-=NAME    RakuCIBot
+=NAME    RakudoCIBot
 =AUTHOR  Patrick Böker <patrickb@cpan.org>
 =VERSION 0
 
@@ -20,7 +20,7 @@ To run the tests do:
     # files will end up in perl6-WebService-GitHub/gen
 
     zef install App::Prove6
-    cd /path/to/RakuCIBot
+    cd /path/to/RakudoCIBot
     zef install --deps-only .
     prove6 -I. -I/path/to/perl6-WebService-GitHub/gen
 

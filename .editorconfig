@@ -6,11 +6,13 @@ indent_style         = space
 indent_size          = 4
 
 [*.json]
-indent_style = space
-indent_size  = 2
+indent_size  = 4
 
 [*.yml]
-indent_style = space
+indent_size  = 4
+
+[*.html.tmpl]
 indent_size  = 2
+
 
 # vim: ft=dosini

@@ -1,13 +1,18 @@
-unit class RakuCIBot;
+unit class RakudoCIBot;
+
+use Cro::HTTP::Log::File;
+use Cro::HTTP::Server;
 
 use Config;
-use Red::Operators:api<2>;
+use Red:api<2>;
 use GitHubInterface;
 use GitHubCITestRequester;
 use CITestSetManager;
 use OBSInterface;
 use OBS;
 use SourceArchiveCreator;
+use Routes;
+use DB;
 
 has SourceArchiveCreator $!source-archive-creator;
 has GitHubInterface $!github-interface;
@@ -20,10 +25,14 @@ has Promise $!running;
 submethod TWEAK() {
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
 
+#`{
     red-defaults('Pg', |%(
         config.db,
         host => config.db<host> || Str
     ));
+}
+    red-defaults('SQLite', database => 'test.sqlite3');
+    #DB::create-db;
 
     my $gh-pem = %*ENV<GITHUB_PEM> ?? %*ENV<GITHUB_PEM> !!
                  config.github-app-key-file ?? config.github-app-key-file.IO.slurp !!
@@ -59,7 +68,7 @@ submethod TWEAK() {
     $!testset-manager.register-test-set-listener($!obs);
 }
 
-method start-ticking() {
+method start() {
     die "Already ticking" if $!running;
 
     $!running = Promise.new();
@@ -77,9 +86,23 @@ method start-ticking() {
             done()
         }
     }
+
+    my Cro::Service $http = Cro::HTTP::Server.new(
+        http => <1.1>,
+        host => config.web-host,
+        port => config.web-port,
+        application => routes(),
+        after => [
+            Cro::HTTP::Log::File.new(logs => $*OUT, errors => $*ERR)
+        ]
+    );
+
+    $http.start;
+
+    say "Listening at http://{config.web-host}:{config.web-port}";
 }
 
-method stop-ticking() {
+method stop() {
     $!running.keep;
     $!running = Nil;
 }

@@ -37,13 +37,13 @@ Create and download a Private Key. Select "General" on the left of your App sett
 Now install the App into your own GitHub account. Again navigate to your Profile Settings and select "Developer Settings", "GitHub Apps" and click "Edit" next to your freshly created application. Select "Install App" on the left and install the app into your personal account. Make sure to grant it access to the three repos you forked above ("rakudo", "nqp" and "MoarVM").
 
 
-Clone the RakuCIBot repo
+Clone the RakudoCIBot repo
 ------------------------
 
-In some folder where you want the RakuCIBot repo to reside, call
+In some folder where you want the RakudoCIBot repo to reside, call
 
-    git clone https://github.com/Raku/RakuCIBot/
-    cd RakuCIBot
+    git clone https://github.com/Raku/RakudoCIBot/
+    cd RakudoCIBot
     zef install --deps-only .
 
 
