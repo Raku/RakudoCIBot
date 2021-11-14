@@ -28,8 +28,8 @@ method process-worklist() is serial-dedup {
     my @running-ptses = DB::CIPlatformTestSet.^all.grep({
         $_.platform ⊂ (DB::OBS, ) &&
         $_.status ⊂ (DB::PLATFORM_IN_PROGRESS, ) &&
-        $_.obs-started-at &&
-        !$_.obs-finished-at });
+        $_.obs-started-at.defined &&
+        !$_.obs-finished-at.defined });
 
     my DB::CIPlatformTestSet $running-pts;
 
@@ -42,7 +42,7 @@ method process-worklist() is serial-dedup {
         with DB::CIPlatformTestSet.^all.first({
                 $_.platform ⊂ (DB::OBS,) &&
                 $_.status ⊂ (DB::PLATFORM_IN_PROGRESS,) &&
-                !$_.obs-started-at }) {
+                !$_.obs-started-at.defined }) {
             $running-pts = $_;
             my $source-id = $running-pts.test-set.source-archive-id;
 
