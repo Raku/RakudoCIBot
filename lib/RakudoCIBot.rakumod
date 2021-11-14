@@ -2,6 +2,7 @@ unit class RakudoCIBot;
 
 use Cro::HTTP::Log::File;
 use Cro::HTTP::Server;
+use Log::Async;
 
 use Config;
 use Red:api<2>;
@@ -24,6 +25,8 @@ has Promise $!running;
 
 submethod TWEAK() {
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
+
+    logger.send-to($*OUT, :level(Loglevels::{config.log-level}));
 
 #`{
     red-defaults('Pg', |%(

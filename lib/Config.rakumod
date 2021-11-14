@@ -28,6 +28,8 @@ class Config {
     has $.web-host;
     has $.web-port;
 
+    has $.log-level;
+
     method from-config(%config) {
         Config.new:
             db => %config<db>,
@@ -55,6 +57,8 @@ class Config {
 
             web-host => %config<web-host>,
             web-port => %config<web-port>,
+
+            log-level => %config<log-level>,
         ;
     }
 }

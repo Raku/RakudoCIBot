@@ -1,6 +1,7 @@
 use CITestSetListener;
-
 unit class OBS does CITestSetListener;
+
+use Log::Async;
 
 use DB;
 use SourceArchiveCreator;
@@ -34,7 +35,7 @@ method process-worklist() is serial-dedup {
     my DB::CIPlatformTestSet $running-pts;
 
     if @running-ptses.elems > 1 {
-        note "More than one running OBS TestSet found.";
+        error "More than one running OBS TestSet found.";
         return;
     }
     elsif @running-ptses.elems == 0 {
@@ -44,6 +45,8 @@ method process-worklist() is serial-dedup {
                 $_.status ⊂ (DB::PLATFORM_IN_PROGRESS,) &&
                 !$_.obs-started-at.defined }) {
             $running-pts = $_;
+            trace "OBS: Starting new run: " ~ $running-pts.id;
+
             my $source-id = $running-pts.test-set.source-archive-id;
 
             for "moarvm", "moarvm",
@@ -67,17 +70,19 @@ method process-worklist() is serial-dedup {
         # Still have a test set we are working on and it's time to have a look at it again.
         $running-pts = @running-ptses[0];
 
+        trace "OBS: Looking at test set again: " ~ $running-pts.id;
+
         # Let's retrieve the ID of that test run and validate our database and OBS agree.
         # TODO: Hardcoding the project here is OK?
         my @sources = $!interface.sources("rakudo-moarvm");
         unless my $id-source = @sources.first({ $_.name ~~ / ^ 'PTS-ID-' / }) {
-            note "No id found in OBS build files.";
+            error "No id found in OBS build files.";
             return;
         }
 
         my $obs-pts-id = +$id-source.name.substr('PTS-ID-'.chars);
         if $obs-pts-id != $running-pts.id {
-            note "OBS and our database have run out of sync.";
+            error "OBS and our database have run out of sync.";
             return;
         }
     }
@@ -114,6 +119,7 @@ method process-worklist() is serial-dedup {
             next if $test.test-finished-at;
 
             if $status ⊂ (DB::SUCCESS, DB::FAILURE, DB::ABORTED) {
+                trace "OBS: Test finished: " ~ $test.id;
                 $test.test-finished-at //= DateTime.now;
                 $test.log //= do {
                     my $log;
@@ -149,6 +155,7 @@ method process-worklist() is serial-dedup {
                 $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS)
                 }) == 0
                 && DateTime.now - $running-pts.obs-started-at > config.obs-min-run-duration {
+            trace "OBS: TestSet finished: " ~ $running-pts.id;
             $running-pts.status = DB::PLATFORM_DONE;
             $running-pts.obs-finished-at = DateTime.now;
             $running-pts.^save;

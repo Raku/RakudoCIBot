@@ -1,4 +1,7 @@
 unit class CITestSetManager;
+
+use Log::Async;
+
 use SerialDedup;
 use DB;
 use SourceArchiveCreator;
@@ -23,6 +26,7 @@ method process-worklist() is serial-dedup {
       -> $test-set {
         given $test-set.status {
             when DB::UNPROCESSED {
+                trace "CITestSetManager: processing unprocessed " ~ $test-set.id;
                 my $id = $!source-archive-creator.create-archive($test-set.source-spec);
                 $test-set.source-archive-id = $id;
                 $test-set.status = DB::SOURCE_ARCHIVE_CREATED;
@@ -38,6 +42,7 @@ method process-worklist() is serial-dedup {
                 }
             }
             when DB::SOURCE_ARCHIVE_CREATED {
+                trace "CITestSetManager: processing source_archive_created " ~ $test-set.id;
                 for $!test-set-listeners.keys {
                     $_.new-test-set($test-set)
                 }

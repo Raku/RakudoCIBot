@@ -1,3 +1,5 @@
+use Log::Async;
+
 use CITestStatusListener;
 use DB;
 use Red::Operators:api<2>;
@@ -66,6 +68,7 @@ method !process-pr-task(PRTask $pr) {
             }).elems == 0
             && $pr.state eq "OPEN" {
         # Unknown PR, add it!
+        info "GitHub: Adding PR: " ~ $pr.number;
         my $db-pr = DB::GitHubPR.^create:
             project      => self!project-to-db-project($pr.project),
             number       => $pr.number,
@@ -93,6 +96,7 @@ method !process-pr-commit-task(PRCommitTask $commit) {
                 && $_.project ⊂ (self!project-to-db-project($commit.project),)
             });
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
+    info "GitHub: Adding PR commit: " ~ $commit.commit-sha;
     DB::CITestSet.^create:
         event-type => DB::PR,
         project    => self!project-to-db-project($commit.project),
@@ -105,9 +109,11 @@ method !process-pr-commit-task(PRCommitTask $commit) {
 }
 method !process-pr-comment-task(PRCommentTask $comment) {
     # TODO
+    info "Adding PR comment: " ~ $comment.created-at;
 }
 
 method poll-for-changes() is serial-dedup {
+    trace "GitHub: Polling for changes";
     for config.projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
         # PRs
         self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, config.github-pullrequest-check-count);
@@ -142,6 +148,7 @@ method !url-to-project($url) {
 
 method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status ⊂ [DB::NEW]) -> $test-set {
+        trace "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
             project    => $test-set.project,
             git-url    => $test-set.git-url,
@@ -182,6 +189,7 @@ method !github-url-to-project-repo($url) {
 }
 
 method tests-queued(@tests) {
+    trace "GitHub: Tests were queued: " ~ @tests.map(*.id).join(" ,");
     for @tests -> $test {
         my $ts = $test.platform-test-set.test-set;
         my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
@@ -202,6 +210,8 @@ method tests-queued(@tests) {
 }
 
 method test-status-changed($test) {
+    trace "GitHub: Test status changed: " ~ $test.id ~ " to " ~ $test.status;
+
     my $gh-status = do given $test.status {
         when DB::NOT_STARTED { "queued" }
         when DB::IN_PROGRESS { "in_progress" }
@@ -240,4 +250,5 @@ method test-set-done($test-set) {
     # GitHub has no concept of a completed check run suite.
     # So we don't need to tell GitHub, that we are done.
     # So there is nothing to do here.
+    trace "GitHub: TestSet done: " ~ $test-set.id;
 }
