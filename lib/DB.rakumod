@@ -69,18 +69,19 @@ model GitHubPR { ... }
 model Command { ... }
 
 model CITest is rw is table<citest> {
-    has UInt                     $.id                    is serial;
-    has Str                      $.name                  is column;
-    has DateTime                 $.creation              is column .= now;
-    has UInt                     $!fk-platform-test-set  is referencing( *.id, :model(DB::CIPlatformTestSet) );
-    has DB::CIPlatformTestSet    $.platform-test-set     is relationship( *.fk-platform-test-set );
-    has DateTime                 $.test-started-at       is column{ :nullable };
-    has DateTime                 $.test-finished-at      is column{ :nullable };
-    has DB::CITestStatus         $.status                is column = NOT_STARTED;
-    has Str                      $.log                   is column{ :nullable, :type<text> };
+    has UInt                  $.id                    is serial;
+    has Str                   $.name                  is column;
+    has DateTime              $.creation              is column .= now;
+    has UInt                  $!fk-platform-test-set  is referencing( *.id, :model(DB::CIPlatformTestSet) );
+    has DB::CIPlatformTestSet $.platform-test-set     is relationship( *.fk-platform-test-set );
+    has DateTime              $.test-started-at       is column{ :nullable };
+    has DateTime              $.test-finished-at      is column{ :nullable };
+    has DB::CITestStatus      $.status                is column = NOT_STARTED;
+    has Str                   $.log                   is column{ :nullable, :type<text> };
 
     # Responsibility of the GitHubCITestRequester
-    has UInt                     $.github-id             is column{ :nullable };
+    has UInt                  $.github-id             is column{ :nullable };
+    has DB::CITestStatus      $.status-pushed         is column = NOT_STARTED;
 }
 
 model CIPlatformTestSet is rw is table<ciplatform_test_set> {
@@ -136,26 +137,22 @@ model CITestSet is rw is table<citest_set> {
 
         has DB::CIPlatformTestSet @.platform-test-sets       is relationship( *.fk-test-set );
 
-    method source-spec() is rw {
-        return-rw Proxy.new(
-            FETCH => sub ($) {
-                SourceSpec.new(
-                    :$!rakudo-git-url,
-                    :$!rakudo-commit-sha,
-                    :$!nqp-git-url,
-                    :$!nqp-commit-sha,
-                    :$!moar-git-url,
-                    :$!moar-commit-sha,
-                )
-            },
-            STORE => sub ($, $spec) {
-                $!rakudo-git-url    = $spec.rakudo-git-url;
-                $!rakudo-commit-sha = $spec.rakudo-commit-sha;
-                $!nqp-git-url       = $spec.nqp-git-url;
-                $!nqp-commit-sha    = $spec.nqp-commit-sha;
-                $!moar-git-url      = $spec.moar-git-url;
-                $!moar-commit-sha   = $spec.moar-commit-sha;
-            },
+    multi method source-spec($spec) {
+        $!rakudo-git-url = $spec.rakudo-git-url;
+        $!rakudo-commit-sha = $spec.rakudo-commit-sha;
+        $!nqp-git-url = $spec.nqp-git-url;
+        $!nqp-commit-sha = $spec.nqp-commit-sha;
+        $!moar-git-url = $spec.moar-git-url;
+        $!moar-commit-sha = $spec.moar-commit-sha;
+    }
+    multi method source-spec() {
+        SourceSpec.new(
+            rakudo-git-url    => $!rakudo-git-url // "",
+            rakudo-commit-sha => $!rakudo-commit-sha // "",
+            nqp-git-url       => $!nqp-git-url // "",
+            nqp-commit-sha    => $!nqp-commit-sha // "",
+            moar-git-url      => $!moar-git-url // "",
+            moar-commit-sha   => $!moar-commit-sha // "",
         )
     }
 }

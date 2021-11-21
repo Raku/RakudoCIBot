@@ -25,7 +25,7 @@ my $interface = mocked(GitHubInterface,
     returning => {
         retrieve-pulls => (
             GitHubCITestRequester::PRTask.new:
-                project      => "rakudo",
+                repo         => "rakudo",
                 git-url      => 'https://github.com/rakudo/rakudo.git',
                 head-branch  => "feature-1",
                 number       => 1,
@@ -44,10 +44,10 @@ my $interface = mocked(GitHubInterface,
                     ),
                 ),
                 commit-task  => GitHubCITestRequester::PRCommitTask.new(
-                    project   => "rakudo",
-                    pr-number => 1,
+                    repo       => "rakudo",
+                    pr-number  => 1,
                     commit-sha => "739f80ae46ea9cd8a640473cba22a23c435f1cde",
-                    user-url => "https://github.com/rakudo/rakudo/pull/1/commits/739f80ae46ea9cd8a640473cba22a23c435f1cde",
+                    user-url   => "https://github.com/rakudo/rakudo/pull/1/commits/739f80ae46ea9cd8a640473cba22a23c435f1cde",
                     ),
                 ;
         )

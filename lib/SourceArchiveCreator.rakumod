@@ -1,15 +1,16 @@
 use OO::Monitors;
+use Log::Async;
 
 class SourceSpec {
     # A Git SHA-1 is a length 40 hex number
     subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest /;
 
     has Str $.rakudo-git-url = 'https://github.com/rakudo/rakudo.git';
-    has SHA1 $.rakudo-commit-sha = 'latest';
+    has SHA1 $.rakudo-commit-sha = 'LATEST';
     has Str $.nqp-git-url = 'https://github.com/Raku/nqp.git';
-    has SHA1 $.nqp-commit-sha = 'latest';
+    has SHA1 $.nqp-commit-sha = 'LATEST';
     has Str $.moar-git-url = 'https://github.com/MoarVM/MoarVM.git';
-    has SHA1 $.moar-commit-sha = 'latest';
+    has SHA1 $.moar-commit-sha = 'LATEST';
     
     submethod TWEAK() {
         $!rakudo-commit-sha .= uc;
@@ -84,6 +85,7 @@ method !get-path-for-name($name) {
 }
 
 method create-archive(SourceSpec $source-spec --> Str) {
+    trace "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
     sub validate($proc) {
         if $proc.exitcode != 0 {
             X::ArchiveCreationException.new(
@@ -91,12 +93,14 @@ method create-archive(SourceSpec $source-spec --> Str) {
                 exitcode => $proc.exitcode,
                 output   => $proc.out.slurp: :close).throw;
         }
+        $proc
     }
-
+    my @shas;
     for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha,
-        $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
-        $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha
-        -> $repo-dir, $remote, $commit {
+            $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
+            $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha
+            -> $repo-dir, $remote, $commit {
+        trace "SourceArchiveCreator: working on " ~ $remote ~ " " ~ $commit;
 
         run(qw|git remote rm foobar|,
             :cwd($repo-dir), :merge).so;
@@ -108,49 +112,66 @@ method create-archive(SourceSpec $source-spec --> Str) {
             :cwd($repo-dir), :merge;
 
         # TODO no hard coded master branch.
-        my $to-use = $commit eq 'latest' ?? 'origin/master' !! $commit;
+        my $to-use = $commit eq 'LATEST' ?? 'origin/master' !! $commit;
 
         validate run qw|git reset --hard|, $to-use,
             :cwd($repo-dir), :merge;
+
+        @shas.push: do if $commit eq "LATEST" {
+            my $proc = validate run qw|git rev-parse HEAD|, :cwd($repo-dir), :out;
+            my $rev = $proc.out.slurp: :close;
+            $rev.uc.trim;
+        }
+        else {
+            $commit;
+        };
     }
 
-    my $id = $source-spec.rakudo-commit-sha ~ '_' ~
-             $source-spec.nqp-commit-sha    ~ '_' ~
-             $source-spec.moar-commit-sha;
+    my $id = @shas.join: "_";
     my $filepath = self!get-path-for-name: $id ~ '.tar';
 
+    trace "SourceArchiveCreator: now archiving to " ~ $filepath;
+
+    run("rm", $filepath.relative($!work-dir), :cwd($!work-dir), :merge).so;
     validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
-        $filepath,
+        $filepath.relative($!work-dir),
         $!rakudo-dir.relative($!work-dir),
         $!nqp-dir.relative($!work-dir),
         $!moar-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
 
-    validate run qw|xz -9|, $filepath;
+    run("rm", $filepath.relative($!work-dir) ~ ".xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath.relative($!work-dir), :cwd($!work-dir), :merge;
 
     # OBS needs three separate archives, so prepare those as well.
-    my $filepath-base = self!get-path-for-name: $id;
+    my $filepath-base = self!get-path-for-name($id).relative($!work-dir);
 
     my $filepath-moar = $filepath-base ~ '-moar.tar';
+    run("rm", $filepath-moar, :cwd($!work-dir), :merge).so;
     validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
         $filepath-moar,
         $!moar-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    validate run qw|xz -9|, $filepath-moar;
+    run("rm", $filepath-moar ~ ".xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-moar, :cwd($!work-dir), :merge;
 
     my $filepath-nqp = $filepath-base ~ '-nqp.tar';
+    run("rm", $filepath-nqp, :cwd($!work-dir), :merge).so;
     validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
         $filepath-nqp,
         $!nqp-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    validate run qw|xz -9|, $filepath-nqp;
+    run("rm", $filepath-nqp ~ ".xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-nqp, :cwd($!work-dir), :merge;
 
-    my $filepath-rakudo = $filepath-base ~ '-rakuod.tar';
+    my $filepath-rakudo = $filepath-base ~ '-rakudo.tar';
+    run("rm", $filepath-rakudo, :cwd($!work-dir), :merge).so;
     validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
         $filepath-rakudo,
         $!rakudo-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    validate run qw|xz -9|, $filepath-rakudo;
+    run("rm", $filepath-rakudo ~ ".xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-rakudo, :cwd($!work-dir), :merge;
 
 
     return $id;

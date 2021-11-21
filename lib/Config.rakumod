@@ -43,7 +43,7 @@ class Config {
 
             obs-check-duration   => %config<obs-check-duration>,
             obs-min-run-duration => %config<obs-min-run-duration>,
-            obs-packages         => %config<obs-packages>,
+            obs-packages         => |%config<obs-packages>,
 
             github-pullrequest-check-count => %config<github-pullrequest-check-count>,
 

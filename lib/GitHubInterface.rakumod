@@ -176,6 +176,9 @@ method retrieve-pulls($project, $repo, $count) {
                   number
                   url
                   headRefName
+                  headRepository {
+                    url
+                  }
                   commits(last: 1) {
                     nodes {
                       url
@@ -202,8 +205,8 @@ method retrieve-pulls($project, $repo, $count) {
     %data<data><repository><pullRequests><edges>.map: -> %pull-data is copy {
         %pull-data = %pull-data<node>;
         GitHubCITestRequester::PRTask.new:
-            :$project,
-            git-url      => %pull-data<url> ~ '.git',
+            :$repo,
+            git-url      => %pull-data<headRepository><url> ~ '.git',
             head-branch  => %pull-data<headRefName>,
             number       => %pull-data<number>,
             title        => %pull-data<title>,
@@ -220,24 +223,24 @@ method retrieve-pulls($project, $repo, $count) {
                     body       => $_<body>,
             }),
             commit-task  => GitHubCITestRequester::PRCommitTask.new(
-                :$project,
+                :$repo,
                 pr-number => %pull-data<number>,
-                commit-sha => %pull-data<commits><nodes>[0]<oid>,
+                commit-sha => %pull-data<commits><nodes>[0]<commit><oid>,
                 user-url => %pull-data<commits><nodes>[0]<url>,
             ),
         ;
     };
 }
 
-method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, :$id!, DateTime:D :$started-at!) {
-    my $data = $!gh.checks-runs.create($owner, $repo, $sha, $name, :details-url($url), :external-id($id), :started-at($started-at.Str)).data;
+method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, Str() :$id!, DateTime:D :$started-at!) {
+    my $data = $!gh.checks-runs.create($owner, $repo, :$name, :head-sha($sha), :details-url($url), :external-id($id), :started-at($started-at.Str)).data;
     return $data<id>;
 }
 
-method update-check-run(:$owner!, :$repo!, :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
+method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
     $!gh.checks-runs.update($owner, $repo, $check-run-id,
         :$status,
-        :completed-at($completed-at.Str),
+        |($completed-at ?? completed-at => $completed-at.Str !! {}),
         :$conclusion
     ).data
 }

@@ -21,14 +21,14 @@ class PRCommentTask {
 }
 
 class PRCommitTask {
-    has $.project is required;
+    has $.repo is required;
     has $.pr-number is required;
     has $.commit-sha is required;
     has $.user-url is required;
 }
 
 class PRTask {
-    has $.project is required;
+    has $.repo is required;
     has $.number is required;
     has $.title is required;
     has $.body is required;
@@ -70,42 +70,50 @@ method !process-pr-task(PRTask $pr) {
         # Unknown PR, add it!
         info "GitHub: Adding PR: " ~ $pr.number;
         my $db-pr = DB::GitHubPR.^create:
-            project      => self!project-to-db-project($pr.project),
+            project      => self!repo-to-db-project($pr.repo),
             number       => $pr.number,
             git-url      => $pr.git-url,
             head-branch  => $pr.head-branch,
             user-url     => $pr.user-url,
             status       => DB::OPEN,
         ;
-        self!process-pr-commit-task($pr.commit-task);
     }
 
+    self!process-pr-commit-task($pr.commit-task);
     self!process-pr-comment-task($_) for $pr.comments;
 }
 
-method !project-to-db-project($project) {
+method !repo-to-db-project($project) {
     $project eq "rakudo"    ?? DB::RAKUDO
-    !! $project eq "Raku"   ?? DB::NQP
+    !! $project eq "nqp"    ?? DB::NQP
     !! $project eq "MoarVM" ?? DB::MOAR
     !! die "unknown project";
 }
 
 method !process-pr-commit-task(PRCommitTask $commit) {
     my $pr = DB::GitHubPR.^all.first({
-                $_.number eq $commit.pr-number
-                && $_.project ⊂ (self!project-to-db-project($commit.project),)
+                $_.number == $commit.pr-number
+                && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
             });
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
-    info "GitHub: Adding PR commit: " ~ $commit.commit-sha;
-    DB::CITestSet.^create:
-        event-type => DB::PR,
-        project    => self!project-to-db-project($commit.project),
-        git-url    => $pr.git-url,
-        commit-sha => $commit.commit-sha,
-        user-url   => $commit.user-url,
-        :$pr,
-    ;
-    self.process-worklist;
+
+    my $ts = DB::CITestSet.^all.first({
+            $_.pr.number == $commit.pr-number
+            && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
+            && $_.commit-sha eq $commit.commit-sha
+    });
+    without $ts {
+        info "GitHub: Adding PR commit: " ~ $commit.commit-sha;
+        DB::CITestSet.^create:
+            event-type => DB::PR,
+            project => self!repo-to-db-project($commit.repo),
+            git-url => $pr.git-url,
+            commit-sha => $commit.commit-sha,
+            user-url => $commit.user-url,
+            :$pr,
+            ;
+        self.process-worklist;
+    }
 }
 method !process-pr-comment-task(PRCommentTask $comment) {
     # TODO
@@ -150,15 +158,82 @@ method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status ⊂ [DB::NEW]) -> $test-set {
         trace "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
-            project    => $test-set.project,
-            git-url    => $test-set.git-url,
+            project => $test-set.project,
+            git-url => $test-set.git-url,
             commit-sha => $test-set.commit-sha,
-        );
+            );
         $!testset-manager.add-test-set(:$test-set, :$source-spec);
+
+        CATCH {
+            default {
+                error "GitHub: Failure processing new test set: " ~ .message ~ .backtrace.Str
+            }
+        }
+    }
+
+    for DB::CITest.^all.grep({ .status != .status-pushed }) -> $test {
+        trace "GitHub: Test status changed: " ~ $test.id ~ " from " ~ $test.status-pushed ~ " to " ~ $test.status;
+
+        my $ts = $test.platform-test-set.test-set;
+
+        my $gh-status = do given $test.status {
+            when DB::NOT_STARTED { "queued" }
+            when DB::IN_PROGRESS { "in_progress" }
+            default { "completed" }
+        };
+        my $completed-at;
+        my $conclusion;
+        if $gh-status eq "completed" {
+            $completed-at = DateTime.now;
+            $conclusion = do given $test.status {
+                when DB::NOT_STARTED { "queued" }
+                when DB::IN_PROGRESS { "in_progress" }
+                when DB::SUCCESS { "success" }
+                when DB::FAILURE { "failure" }
+                when DB::ABORTED { "cancelled" }
+                when DB::UNKNOWN { "timed_out" }
+            };
+        }
+
+        my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
+
+        if $test.status-pushed == DB::NOT_STARTED {
+            trace "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }";
+            $test.github-id = $!github-interface.create-check-run(
+                owner => %project-and-repo<project>,
+                repo => %project-and-repo<repo>,
+                name => $test.name,
+                sha => $ts.commit-sha,
+                url => "https://cibot.rakudo.org/test/" ~ $test.id,
+                id => $test.id,
+                started-at => DateTime.now,
+                status => $gh-status,
+                |($completed-at ?? :$completed-at !! {}),
+                |($conclusion ?? :$conclusion !! {}),
+                );
+        }
+        else {
+            $!github-interface.update-check-run(
+                owner => %project-and-repo<project>,
+                repo => %project-and-repo<repo>,
+                check-run-id => $test.github-id,
+                status => $gh-status,
+                |($completed-at ?? :$completed-at !! {}),
+                |($conclusion ?? :$conclusion !! {}),
+                );
+        }
+        $test.status-pushed = $test.status;
+        $test.^save;
+
+        CATCH {
+            default {
+                error "GitHub: Failure processing status change: " ~ .message ~ .backtrace.Str
+            }
+        }
     }
 }
 
-method !determine-source-spec(:$project, :$git-url, :$commit-sha --> SourceSpec) {
+method !determine-source-spec(:$project!, :$git-url!, :$commit-sha! --> SourceSpec) {
     given $project {
         when DB::RAKUDO {
             return SourceSpec.new:
@@ -189,61 +264,11 @@ method !github-url-to-project-repo($url) {
 }
 
 method tests-queued(@tests) {
-    trace "GitHub: Tests were queued: " ~ @tests.map(*.id).join(" ,");
-    for @tests -> $test {
-        my $ts = $test.platform-test-set.test-set;
-        my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
-
-        $test.github-id = $!github-interface.create-check-run(
-            owner      => %project-and-repo<project>,
-            repo       => %project-and-repo<repo>,
-            name       => $test.name,
-            sha        => $ts.commit-sha,
-            url        => "",
-            id         => $test.id,
-            started-at => DateTime.now,
-        );
-        $test.^save;
-
-        #say "Queueing test {$test.name}: {%project-and-repo<project>}/{%project-and-repo<repo>} {$ts.commit-sha}";
-    }
+    self.process-worklist;
 }
 
 method test-status-changed($test) {
-    trace "GitHub: Test status changed: " ~ $test.id ~ " to " ~ $test.status;
-
-    my $gh-status = do given $test.status {
-        when DB::NOT_STARTED { "queued" }
-        when DB::IN_PROGRESS { "in_progress" }
-        default          { "completed" }
-    };
-    my $completed-at;
-    my $conclusion;
-    if $gh-status eq "completed" {
-        $completed-at = DateTime.now;
-        $conclusion = do given $test.status {
-            when DB::NOT_STARTED { "queued" }
-            when DB::IN_PROGRESS { "in_progress" }
-            when DB::SUCCESS     { "success" }
-            when DB::FAILURE     { "failure" }
-            when DB::ABORTED     { "cancelled" }
-            when DB::UNKNOWN     { "timed_out" }
-        };
-    }
-
-    my $ts = $test.platform-test-set.test-set;
-
-    my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
-    $!github-interface.update-check-run(
-        owner      => %project-and-repo<project>,
-        repo       => %project-and-repo<repo>,
-        check-run-id => $test.github-id,
-        status => $gh-status,
-        :$completed-at,
-        :$conclusion,
-    );
-
-    #say "Updating test {$test.name}: {$gh-status}";
+    self.process-worklist;
 }
 
 method test-set-done($test-set) {

@@ -1,16 +1,13 @@
 use v6.d;
 
+use Log::Async;
 use LibXML;
 use Cro::HTTP::Client;
 use Base64;
 
 unit class OBSInterface;
 
-has Cro::HTTP::Client $!cro .= new:
-    headers => [
-        Accept => 'application/xml',
-        Authorization => $!auth-str,
-    ];
+has Cro::HTTP::Client $!cro;
 has LibXML     $!xml-parser .= new;
 
 has $.apiurl = 'https://api.opensuse.org';
@@ -19,20 +16,35 @@ has Str:D $.user is required;
 has Str:D $.password is required;
 has $!auth-str;
 
+# API Docs can be found at:
+# https://build.opensuse.org/apidocs/index
+# For quick access:
+# https://libxml-raku.github.io/LibXML-raku/Node
+
+
 submethod TWEAK() {
     $!auth-str = 'Basic ' ~ encode-base64("$!user:$!password", :str);
+    $!cro .= new:
+        headers => [
+            Accept => 'application/xml',
+            Authorization => $!auth-str,
+        ];
 }
 
 method !req-plain($method, $url-path, $body-data?) {
     my $res;
     if $body-data {
-        $res = $!cro.request: $method, $!apiurl ~ $url-path, content => $body-data;
+        $res = await $!cro.request: $method, $!apiurl ~ $url-path, body => $body-data;
     }
     else {
-        $res = $!cro.request: $method, $!apiurl ~ $url-path;
+        $res = await $!cro.request: $method, $!apiurl ~ $url-path;
     }
-    die 'HTTP request failed.' unless $res<success>;
-    return $res<content>;
+    CATCH {
+        when X::Cro::HTTP::Error {
+                die "HTTP request failed: $method $!apiurl$url-path " ~ $_;
+        }
+    }
+    return await $res.body;
 }
 
 method !req-dom($method, $url-path, $body-data?) {
@@ -51,6 +63,10 @@ method upload-file($package, $filename, :$path, :$blob) {
     self!req-dom: 'PUT', "/source/$!project/$package/$filename?rev=upload", $data;
 }
 
+method delete-file($package, $filename) {
+    self!req-dom: 'DELETE', "/source/$!project/$package/$filename";
+}
+
 method commit($package) {
     self!req-dom: 'POST', "/source/$!project/$package?cmd=commit";
 }
@@ -66,16 +82,17 @@ class OBSResult {
 method builds($package?) {
     my $dom = self!req-dom: 'GET', "/build/$!project/_result" ~ ($package ?? "package=$package" !! "");
     my @results;
-    for $dom.findvalue("/resultlist/result") -> $res {
+    for $dom.findnodes("/resultlist/result") -> $res {
         @results.push: OBSResult.new(
             project    => $res.getAttribute("project"),
             repository => $res.getAttribute("repository"),
             arch       => $res.getAttribute("arch"),
             code       => $res.getAttribute("code"),
             state      => $res.getAttribute("state"),
-            status     => %($res.findvalue("/status").map({ $_.getAttribute("package") => $_.getAttribute("code") })),
+            status     => %($res.findnodes("status").map({ $_.getAttribute("package") => $_.getAttribute("code") })),
         );
     }
+    return @results;
 }
 
 method history($package?) {
@@ -91,7 +108,7 @@ class OBSSource {
 method sources($package) {
     my $dom = self!req-dom: 'GET', "/source/$!project/$package";
     my @sources;
-    for $dom.findvalue('/directory/entry') -> $entr {
+    for $dom.findnodes('/directory/entry') -> $entr {
         @sources.push: OBSSource.new(
             name  => $entr.getAttribute("name"),
             md5   => $entr.getAttribute("md5"),

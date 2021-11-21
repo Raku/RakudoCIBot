@@ -26,7 +26,7 @@ has Promise $!running;
 submethod TWEAK() {
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
 
-    logger.send-to($*OUT, :level(Loglevels::{config.log-level}));
+    logger.send-to($*OUT, :level(* >= Loglevels::{config.log-level}));
 
 #`{
     red-defaults('Pg', |%(

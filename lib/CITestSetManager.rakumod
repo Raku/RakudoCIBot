@@ -37,6 +37,7 @@ method process-worklist() is serial-dedup {
                     when X::ArchiveCreationException {
                         $test-set.source-retrieval-retries++;
                         $test-set.^save;
+                        warn "ArchiveCreationException: " ~ $_.message;
                         # TODO give up after enough retries
                     }
                 }
@@ -56,9 +57,9 @@ method process-worklist() is serial-dedup {
     }
 }
 
-method add-test-set(:$test-set, :$source-spec) {
+method add-test-set(:$test-set!, :$source-spec!) {
     $test-set.status = DB::UNPROCESSED;
-    $test-set.source-spec = $source-spec;
+    $test-set.source-spec: $source-spec;
     $test-set.^save;
     self.process-worklist;
 }
