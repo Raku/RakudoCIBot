@@ -55,6 +55,12 @@ method process-worklist() is serial-dedup {
             }
         }
     }
+
+    CATCH {
+        default {
+            error "Failed starting OBS run: " ~ .message ~ .backtrace.Str
+        }
+    }
 }
 
 method add-test-set(:$test-set!, :$source-spec!) {

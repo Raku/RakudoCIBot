@@ -126,6 +126,11 @@ method poll-for-changes() is serial-dedup {
         # PRs
         self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, config.github-pullrequest-check-count);
     }
+    CATCH {
+        default {
+            error "GitHub: Polling for changes failed: " ~ .message ~ .backtrace.Str
+        }
+    }
 }
 
 #`[
