@@ -129,7 +129,7 @@ method process-worklist() is serial-dedup {
             $test.status = $status;
 
             if $status ⊂ (DB::SUCCESS, DB::FAILURE, DB::ABORTED) {
-                trace "OBS: Test finished: " ~ $test.id;
+                trace "OBS: Test finished: " ~ $test.id // "new test";
                 $test.test-finished-at //= DateTime.now;
                 $test.log //= do {
                     my $log;
