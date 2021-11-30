@@ -35,6 +35,8 @@ submethod TWEAK() {
     ));
 }
     red-defaults('SQLite', database => 'test.sqlite3');
+
+    #DB::drop-db;
     #DB::create-db;
 
     my $gh-pem = %*ENV<GITHUB_PEM> ?? %*ENV<GITHUB_PEM> !!

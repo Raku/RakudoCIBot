@@ -195,6 +195,10 @@ model Command is rw is table<command> {
     has DB::CITestSet     @.test-sets  is relationship( *.fk-command );
 }
 
+our sub drop-db() {
+    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPR, DB::Command).drop;
+}
+
 our sub create-db() {
     schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPR, DB::Command).create;
 }
