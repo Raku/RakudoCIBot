@@ -146,32 +146,35 @@ method create-archive(SourceSpec $source-spec --> Str) {
     # OBS needs three separate archives, so prepare those as well.
     my $filepath-base = self!get-path-for-name($id).relative($!work-dir);
 
-    my $filepath-moar = $filepath-base ~ '-moar.tar';
-    run("rm", $filepath-moar, :cwd($!work-dir), :merge).so;
-    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
-        $filepath-moar,
+    my $filepath-moar = $filepath-base ~ '-moar';
+    run("rm", $filepath-moar ~ ".tar", :cwd($!work-dir), :merge).so;
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner|,
+        "--transform=s,^MoarVM,{$id}-moar,",
+        "-f", $filepath-moar ~ ".tar",
         $!moar-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-moar ~ ".xz", :cwd($!work-dir), :merge).so;
-    validate run qw|xz -9|, $filepath-moar, :cwd($!work-dir), :merge;
+    run("rm", $filepath-moar ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-moar ~ ".tar", :cwd($!work-dir), :merge;
 
-    my $filepath-nqp = $filepath-base ~ '-nqp.tar';
-    run("rm", $filepath-nqp, :cwd($!work-dir), :merge).so;
-    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
-        $filepath-nqp,
+    my $filepath-nqp = $filepath-base ~ '-nqp';
+    run("rm", $filepath-nqp ~ ".tar", :cwd($!work-dir), :merge).so;
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner|,
+        "--transform=s,^nqp,{$id}-nqp,",
+        "-f", $filepath-nqp ~ ".tar",
         $!nqp-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-nqp ~ ".xz", :cwd($!work-dir), :merge).so;
-    validate run qw|xz -9|, $filepath-nqp, :cwd($!work-dir), :merge;
+    run("rm", $filepath-nqp ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-nqp ~ ".tar", :cwd($!work-dir), :merge;
 
-    my $filepath-rakudo = $filepath-base ~ '-rakudo.tar';
-    run("rm", $filepath-rakudo, :cwd($!work-dir), :merge).so;
-    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,
-        $filepath-rakudo,
+    my $filepath-rakudo = $filepath-base ~ '-rakudo';
+    run("rm", $filepath-rakudo ~ ".tar", :cwd($!work-dir), :merge).so;
+    validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner|,
+        "--transform=s,^rakudo,{$id}-rakudo,",
+        "-f", $filepath-rakudo ~ ".tar",
         $!rakudo-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-rakudo ~ ".xz", :cwd($!work-dir), :merge).so;
-    validate run qw|xz -9|, $filepath-rakudo, :cwd($!work-dir), :merge;
+    run("rm", $filepath-rakudo ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    validate run qw|xz -9|, $filepath-rakudo ~ ".tar", :cwd($!work-dir), :merge;
 
 
     return $id;

@@ -31,4 +31,7 @@ my $dir = $sac-store-dir.add('87/87D0');
 ok $dir.d;
 ok $dir.add("$id.tar.xz").f; 
 nok $dir.add("$id.tar").f;
+ok $dir.add("{$id}-moar.tar.xz").f; 
+ok $dir.add("{$id}-nqp.tar.xz").f; 
+ok $dir.add("{$id}-rakudo.tar.xz").f; 
 
