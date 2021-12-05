@@ -203,7 +203,7 @@ method process-worklist() is serial-dedup {
         my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
 
         if $test.status-pushed == DB::NOT_STARTED {
-            trace "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }";
+            trace "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status }, { $completed-at // "" } { $conclusion // "" }";
             $test.github-id = $!github-interface.create-check-run(
                 owner => %project-and-repo<project>,
                 repo => %project-and-repo<repo>,
@@ -218,6 +218,7 @@ method process-worklist() is serial-dedup {
                 );
         }
         else {
+            trace "GitHub: Updating test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status-pushed } => { $test.status }, { $completed-at // "" } { $conclusion // "" }";
             $!github-interface.update-check-run(
                 owner => %project-and-repo<project>,
                 repo => %project-and-repo<repo>,
