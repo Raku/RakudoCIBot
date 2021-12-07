@@ -2,6 +2,7 @@ use Test;
 use Test::Mock;
 use Red:api<2>;
 use File::Temp;
+use Log::Async;
 
 use DB;
 use Config;
@@ -13,6 +14,7 @@ use OBS;
 use SourceArchiveCreator;
 
 set-config($*PROGRAM.parent.add("data/config-test.yml"));
+logger.untapped-ok = True;
 
 my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
 
@@ -101,16 +103,16 @@ my OBS $obs .= new:
 $testset-manager.register-test-set-listener($obs);
 
 $requester.add-task: GitHubCITestRequester::PRTask.new:
-    project      => "rakudo",
-    git-url      => "https://github.com/usev6/rakudo.git",
-    head-branch  => "jvm_phasers_new-disp",
+    repo         => "rakudo",
     number       => 4574,
     title        => "[JVM] Restore pre-new-disp behaviour for phasers",
     body         => "Lalala hie a hiea.",
     state        => "OPEN",
+    git-url      => "https://github.com/usev6/rakudo.git",
+    head-branch  => "jvm_phasers_new-disp",
     user-url     => "https://github.com/rakudo/rakudo/pull/4574",
     commit-task  => GitHubCITestRequester::PRCommitTask.new(
-        project      => "rakudo",
+        repo         => "rakudo",
         pr-number    => 4574,
         commit-sha   => "9ca813b7c4c8e429eb4da637aefd953f89f8af22",
         user-url     => "https://github.com/patrickbkr/GitHub-API-Testing/pull/4574/commits/9ca813b7c4c8e429eb4da637aefd953f89f8af22",
@@ -129,13 +131,14 @@ check-mock($obs-interface,
 
 check-mock($github-interface,
     *.called("create-check-run", with => :(
+        :$id!,
+        Str:D :$name!,
         :$owner! where "usev6",
         :$repo!  where "rakudo",
-        Str:D :$name!,
         :$sha!   where "9ca813b7c4c8e429eb4da637aefd953f89f8af22",
-        :$url!,
-        :$id!,
         DateTime:D :$started-at!,
+        :$status! where "in_progress",
+        :$url!,
     ))
 );
 

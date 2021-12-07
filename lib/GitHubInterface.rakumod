@@ -34,19 +34,19 @@ method parse-hook-request($event, %json) {
                     when "MoarVM/MoarVM" { "moarvm" }
                 };
                 $.processor.add-task: GitHubCITestRequester::PRTask.new:
-                    project      => %json<pull_request><base><repo><owner><login>,
-                    git-url      => %json<pull_request><head><repo><clone_url>,
-                    head-branch  => %json<pull_request><head><ref>,
-                    number       => %json<pull_request><number>,
-                    title        => %json<pull_request><title>,
-                    body         => %json<pull_request><body>,
-                    state        => %json<pull_request><state>,
-                    user-url     => %json<pull_request><url>,
-                    commit-task  => GitHubCITestRequester::PRCommitTask.new(
-                        project      => %json<pull_request><base><repo><owner><login>,
-                        pr-number    => %json<pull_request><number>,
-                        commit-sha   => %json<pull_request><head><sha>,
-                        user-url     => "https://github.com/patrickbkr/GitHub-API-Testing/pull/" ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
+                    repo        => %json<pull_request><base><repo><owner><login>,
+                    number      => %json<pull_request><number>,
+                    title       => %json<pull_request><title>,
+                    body        => %json<pull_request><body>,
+                    state       => %json<pull_request><state>,
+                    git-url     => %json<pull_request><head><repo><clone_url>,
+                    head-branch => %json<pull_request><head><ref>,
+                    user-url    => %json<pull_request><url>,
+                    commit-task => GitHubCITestRequester::PRCommitTask.new(
+                        repo       => %json<pull_request><base><repo><owner><login>,
+                        pr-number  => %json<pull_request><number>,
+                        commit-sha => %json<pull_request><head><sha>,
+                        user-url   => "https://github.com/patrickbkr/GitHub-API-Testing/pull/" ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
                     ),
                 ;
             }

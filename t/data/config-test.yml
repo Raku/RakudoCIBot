@@ -1,4 +1,12 @@
+db:
+    host: ~
+    #port:
+    dbname: rcb_test
+    user: some_user
+    #password:
+
 github-app-id: "87729"
+github-app-key-file: "test.private-key.pem"
 projects:
     rakudo:
         project: rakudo
@@ -16,15 +24,18 @@ projects:
         slug: MoarVM/MoarVM
         install-id: 20243470
 
+obs-user: someuser
+obs-password: "some_password"
+
 # Disable limiters so we can reliably guide processing of the work list.
 obs-check-duration: 0
 obs-min-run-duration: 0
 obs-packages:
-  - moarvm
-  - nqp-moarvm
-  - rakudo-moarvm
+    - moarvm
+    - nqp-moarvm
+    - rakudo-moarvm
 
-github-pullrequest-check-count: 15
+github-pullrequest-check-count: 3
 
 sac-work-dir: work/sac-work
 sac-store-dir: work/sac-store
@@ -33,3 +44,8 @@ obs-work-dir: work/obs-work
 testset-manager-interval: 300 # 5 * 60
 github-requester-interval: 300 # 5 * 60
 obs-interval: 300 # 5 * 60
+
+web-host: localhost
+web-port: 10000
+
+log-level: TRACE
