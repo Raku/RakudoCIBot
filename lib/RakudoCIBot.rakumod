@@ -36,6 +36,7 @@ submethod TWEAK() {
 }
     red-defaults('SQLite', database => 'test.sqlite3');
 
+
     #DB::drop-db;
     #DB::create-db;
 
@@ -79,13 +80,16 @@ method start() {
     $!running = Promise.new();
     start react {
         whenever Supply.interval(config.testset-manager-interval) {
+            #my $*RED-DEBUG = True;
             $!testset-manager.process-worklist;
         }
         whenever Supply.interval(config.github-requester-interval) {
+            #my $*RED-DEBUG = True;
             $!requester.poll-for-changes;
             $!requester.process-worklist;
         }
         whenever Supply.interval(config.obs-interval) {
+            #my $*RED-DEBUG = True;
             $!obs.process-worklist;
         }
         whenever $!running {
