@@ -55,14 +55,16 @@ method process-worklist() is serial-dedup {
                     "rakudo", "rakudo-moarvm" -> $project, $obs-project {
                 my @sources = $!interface.sources($obs-project);
                 $!interface.delete-file($obs-project, $_.name) with @sources.first({ $_.name ~~ / ^ 'PTS-ID-' / });
-                $!interface.delete-file($obs-project, $_.name) with @sources.first({ $_.name ~~ / ^ $project '-' .* '.tar.xz' $ / });
+                $!interface.delete-file($obs-project, $_.name) with @sources.first({ $_.name ~~ / '-' $project '.tar.xz' $ / });
 
                 my $archive-path = $!source-archive-creator.get-archive-path($source-id, $project);
                 $!interface.upload-file($obs-project, "PTS-ID-" ~ $running-pts.id, :blob(""));
-                $!interface.upload-file($obs-project, $project ~ "-" ~ $source-id ~ ".tar.xz",
+                $!interface.upload-file($obs-project, $source-id ~ "-" ~ $project ~ ".tar.xz",
                 :path($archive-path));
                 my $spec = %?RESOURCES{$obs-project ~ ".spec"}.slurp;
-                $spec ~~ s{ '<rev>' } = $source-id;
+                $spec ~~ s{ '<moar_rev>' }   = $source-id;
+                $spec ~~ s{ '<nqp_rev>' }    = $source-id;
+                $spec ~~ s{ '<rakudo_rev>' } = $source-id;
                 $!interface.upload-file($obs-project, $obs-project ~ ".spec", :blob($spec));
                 my $dom = $!interface.commit($obs-project);
             }

@@ -15,7 +15,8 @@
 # Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
-%global nqp_rev 2020.11+git3.g87ee9469d
+%global nqp_rev <nqp_rev>
+%global moar_rev <moar_rev>
 
 Name:           nqp-moarvm
 Version:        %nqp_rev
@@ -24,11 +25,11 @@ Summary:        NQP
 License:        Artistic-2.0
 Group:          Development/Languages/Other
 URL:            https://github.com/Raku/nqp/
-Source:         http://raku-ci.org/test/12345/nqp-%{version}.tar.xz
+Source:         http://raku-ci.org/test/12345/%{version}-nqp.tar.xz
 Patch0:         nqp-test-log.diff
-BuildRequires:  moarvm-devel >= 2020.11+git47.g1c7358004
+BuildRequires:  moarvm-devel = %moar_rev
 BuildRequires:  perl(YAML::Tiny)
-Requires:       moarvm >= 2020.11+git47.g1c7358004
+Requires:       moarvm = %moar_rev
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 %ifarch s390x
 BuildRequires:  libffi-devel
@@ -40,7 +41,7 @@ to implement a full Raku compiler. This package provides NQP running
 on the MoarVM virtual machine.
 
 %prep
-%setup -q -n nqp-%{nqp_rev}
+%setup -q -n %{nqp_rev}-nqp
 %patch0 -p1
 
 %build

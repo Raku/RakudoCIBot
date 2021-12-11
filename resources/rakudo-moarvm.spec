@@ -15,9 +15,9 @@
 # Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
 
-%global rakudo_rev 2020.11+git57.g4e21adab9
-%global nqp_rev 2020.11+git3.g87ee9469d
-%global moarvm_rev 2020.11+git47.g1c7358004
+%global rakudo_rev <rakudo_rev>
+%global nqp_rev <nqp_rev>
+%global moar_rev <moar_rev>
 
 Name:           rakudo-moarvm
 Version:        %rakudo_rev
@@ -26,10 +26,10 @@ Summary:        Raku implementation running on MoarVM
 License:        Artistic-2.0
 Group:          Development/Languages/Other
 URL:            http://rakudo.org/
-Source0:        http://raku-ci.org/test/12345/rakudo-%{version}.tar.xz
+Source0:        http://raku-ci.org/test/12345/%{version}-rakudo.tar.xz
 Patch0:         rakudo-test-log.diff
 BuildRequires:  fdupes
-BuildRequires:  moarvm-devel = %moarvm_rev
+BuildRequires:  moarvm-devel = %moar_rev
 BuildRequires:  nqp-moarvm = %nqp_rev
 BuildRequires:  perl(YAML::Tiny)
 Provides:       raku = %{version}
@@ -44,7 +44,7 @@ Rakudo is an implementation of the Raku programming language specification that
 runs on the MoarVM virtual machine.
 
 %prep
-%setup -q -n rakudo-%{rakudo_rev}
+%setup -q -n %{rakudo_rev}-rakudo
 %patch0 -p1
 
 %build
