@@ -1,0 +1,28 @@
+<:use 'page.crotmp'>
+<|page('Test Set')>
+<h1>Test Set <.id></h1>
+
+<ul>
+<li>ID: <.id>
+<li>Created at: <.created-at>
+<li>Project: <.project>
+<li>GitHub: <.user-url>
+<li>Commit: <.commit-sha>
+<li>Status: <.status>
+<li>Error: <.error>
+<li>Rakudo Repo: <.rakudo-git-url>
+<li>Rakudo SHA: <.rakudo-commit-sha>
+<li>NQP Repo: <.nqp-git-url>
+<li>NQP SHA: <.nqp-commit-sha>
+<li>Moar Repo: <.moar-git-url>
+<li>Moar SHA: <.moar-commit-sha>
+<li><a href="<.source-link>">Source</a>
+</ul>
+
+<h2>Tests</h2>
+<ul>
+<@.tests>
+<li><a href="<.url>"><.id></a> <.name> <.status>
+</@>
+</ul>
+</|>

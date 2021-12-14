@@ -1,0 +1,8 @@
+<:use 'page.crotmp'>
+<|page('Home')>
+<h1>Rakudo CI Bot</h1>
+
+<h2>Recent test runs</h2>
+...
+
+</|>

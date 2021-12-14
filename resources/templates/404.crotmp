@@ -1,0 +1,6 @@
+<:use 'page.crotmp'>
+<|page('Not Found')>
+<h1><$_> -> 404</h1>
+
+That thing wasn't found.
+</|>

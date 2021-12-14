@@ -1,0 +1,18 @@
+<:use 'page.crotmp'>
+<|page('Test')>
+<h1>Test <.id></h1>
+
+<ul>
+<li>ID: <.id>
+<li>Name: <.name>
+<li>Backend: <.backend>
+<li>Status: <.status>
+<li>Created at: <.created-at>
+<li>Started at: <.started-at>
+<li>Finished at: <.finished-at>
+<li>Commit: <.commit-url>
+<li>CI Backend: <.backend-url>
+<li><a href="<.test-set-url>">Test Set</a>
+<li><a href="<.log-url>">Log</a>
+</ul>
+</|>

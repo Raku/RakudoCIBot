@@ -101,7 +101,7 @@ method start() {
         http => <1.1>,
         host => config.web-host,
         port => config.web-port,
-        application => routes(),
+        application => routes($!source-archive-creator),
         after => [
             Cro::HTTP::Log::File.new(logs => $*OUT, errors => $*ERR)
         ]

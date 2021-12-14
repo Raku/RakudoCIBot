@@ -1,9 +1,10 @@
+<:macro page($title)>
 <!doctype html>
 <html class="no-js" lang="">
 
 <head>
   <meta charset="utf-8">
-  <title>Rakudo CI Bot</title>
+  <title>RCB - $title</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -19,16 +20,18 @@
 
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/bulma.css">
 
   <meta name="theme-color" content="#fafafa">
 </head>
 
 <body>
-  <$_>
+<:body>
 
-  <script src="js/vendor/modernizr-3.11.2.min.js"></script>
-  <script src="js/plugins.js"></script>
-  <script src="js/main.js"></script>
+<script src="js/vendor/modernizr-3.11.2.min.js"></script>
+<script src="js/plugins.js"></script>
+<script src="js/main.js"></script>
 </body>
 
 </html>
+</:>

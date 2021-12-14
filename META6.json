@@ -45,11 +45,17 @@
         "OBSInterface": "lib/OBSInterface.rakumod",
         "Config": "lib/Config.rakumod",
         "Routes": "lib/Routes.rakumod",
-        "Routes::Home": "lib/Routes/Home.rakumod",
+        "Routes::home": "lib/Routes/home.rakumod",
+        "Routes::test": "lib/Routes/test.rakumod",
+        "Routes::testset": "lib/Routes/testset.rakumod",
+        "Routes::source": "lib/Routes/source.rakumod",
         "Routes::GitHubHook": "lib/Routes/GitHubHook.rakumod"
     },
     "resources": [
-        "templates/page.html.tmpl",
+        "templates/page.crotmp",
+        "templates/home.crotmp",
+        "templates/test.crotmp",
+        "templates/testset.crotmp",
         "static/tile.png",
         "static/tile-wide.png",
         "static/site.webmanifest",
@@ -76,6 +82,8 @@
         "static/doc/faq.md",
         "static/css/normalize.css",
         "static/css/main.css",
+        "static/css/bulma.css",
+        "static/css/bulma.css.map",
         "rakudo-moarvm.spec",
         "nqp-moarvm.spec",
         "moarvm.spec"

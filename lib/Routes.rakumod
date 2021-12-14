@@ -1,13 +1,18 @@
 use Cro::HTTP::Router;
-
-use Routes::Home;
-use Routes::GitHubHook;
 use Cro::WebApp::Template;
 
-sub routes() is export {
+use Routes::home;
+use Routes::test;
+use Routes::testset;
+use Routes::source;
+use Routes::GitHubHook;
+use SourceArchiveCreator;
+
+sub routes(SourceArchiveCreator $sac) is export {
+    template-location 'resources/templates/';
     route {
-        resources-from %?RESOURCES;
-        templates-from-resources prefix => 'templates';
+        #resources-from %?RESOURCES;
+        #templates-from-resources prefix => 'templates';
 
         get -> "css", *@path {
             resource "static/css", @path;
@@ -20,6 +25,9 @@ sub routes() is export {
         }
 
         include home-routes;
+        include test-routes;
+        include testset-routes;
+        include source-routes($sac);
         include github-hook-routes;
     }
 }
