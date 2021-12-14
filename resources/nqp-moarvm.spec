@@ -1,7 +1,7 @@
 #
 # spec file for package nqp-moarvm
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -41,7 +41,7 @@ to implement a full Raku compiler. This package provides NQP running
 on the MoarVM virtual machine.
 
 %prep
-%setup -q -n %{nqp_rev}-nqp
+%setup -q
 %patch0 -p1
 
 %build

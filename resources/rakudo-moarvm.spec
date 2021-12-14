@@ -1,7 +1,7 @@
 #
 # spec file for package rakudo-moarvm
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -44,7 +44,7 @@ Rakudo is an implementation of the Raku programming language specification that
 runs on the MoarVM virtual machine.
 
 %prep
-%setup -q -n %{rakudo_rev}-rakudo
+%setup -q
 %patch0 -p1
 
 %build
@@ -55,7 +55,7 @@ make
 # See armv6 issue: https://github.com/rakudo/rakudo/issues/2513
 %check
 rm t/08-performance/99-misc.t
-RAKUDO_SKIP_TIMING_TESTS=1 make test
+ROAST_TIMING_SCALE=10 RAKUDO_SKIP_TIMING_TESTS=1 make test
 %endif
 
 %install

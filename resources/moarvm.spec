@@ -1,7 +1,7 @@
 #
 # spec file for package moarvm
 #
-# Copyright (c) 2020 SUSE LLC
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -27,6 +27,7 @@ URL:            http://moarvm.org
 Source:         http://raku-ci.org/test/12345/%{moar_rev}-moar.tar.xz
 # PATCH-FIX-OPENSUSE boo#1100677
 Patch0:         reproducible.patch
+Patch1:         moarvm-segfault.diff
 BuildRequires:  perl(ExtUtils::Command)
 %ifarch s390x
 BuildRequires:  libffi-devel
@@ -51,10 +52,11 @@ MoarVM (Metamodel On A Runtime) development headers.
 %prep
 %setup -q -n %{moar_rev}-moar
 %patch0 -p1
+%patch1 -p1
 
 %build
 perl Configure.pl --prefix=%{_usr} --libdir=%{_libdir} --debug --optimize=3 %{ffiopt}
-make %{?_smp_mflags}
+make NOISY=1 %{?_smp_mflags}
 
 %install
 %make_install
@@ -72,6 +74,6 @@ mkdir -p $RPM_BUILD_ROOT/%{_libdir}/moar/share
 %files devel
 %defattr(-,root,root)
 %{_includedir}/*
-%{_datadir}/pkgconfig
+%{_datadir}/pkgconfig/*
 
 %changelog
