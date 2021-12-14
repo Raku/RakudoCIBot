@@ -1,0 +1,16 @@
+use Test;
+use WebService::OBS;
+
+if %*ENV<OBS_TEST_USER>:!exists or %*ENV<OBS_TEST_PASSWORD>:!exists {
+    note "Need to set OBS_TEST_USER and OBS_TEST_PASSWORD env vars to run these tests.";
+    exit 1;
+}
+
+my WebService::OBS $obs .= new:
+    user => %*ENV<OBS_TEST_USER>,
+    password => %*ENV<OBS_TEST_PASSWORD>,
+;
+
+isa-ok $obs.server-revision, Str, "Basic request works";
+
+done-testing;
