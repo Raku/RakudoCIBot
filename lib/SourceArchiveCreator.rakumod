@@ -20,6 +20,21 @@ class SourceSpec {
 }
 
 class X::ArchiveCreationException is Exception {
+}
+
+class X::ArchiveTextCreationException is X::ArchiveCreationException {
+    has $.text;
+
+    multi method message() {
+        $!text;
+    }
+
+    method gist() {
+        $!text;
+    }
+}
+
+class X::ArchiveCommandCreationException is X::ArchiveCreationException {
     has $.command;
     has $.exitcode;
     has $.output;
@@ -66,6 +81,7 @@ has IO::Path $.store-dir is required where *.d;
 has $!rakudo-dir = $!work-dir.add('rakudo');
 has $!nqp-dir    = $!work-dir.add('nqp');
 has $!moar-dir   = $!work-dir.add('MoarVM');
+has $!ref-dir    = $!work-dir.add('references');
 
 submethod TWEAK() {
     run qw|git clone http://github.com/rakudo/rakudo|, $!rakudo-dir
@@ -74,6 +90,7 @@ submethod TWEAK() {
         if !$!nqp-dir.e;
     run qw|git clone http://github.com/MoarVM/MoarVM|, $!moar-dir
         if !$!moar-dir.e;
+    $!ref-dir.mkdir unless $!ref-dir.d;
 }
 
 method !get-path-for-name($name) {
@@ -88,13 +105,17 @@ method create-archive(SourceSpec $source-spec --> Str) {
     trace "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
     sub validate($proc) {
         if $proc.exitcode != 0 {
-            X::ArchiveCreationException.new(
+            X::ArchiveCommandCreationException.new(
                 command => $proc.command.join(' '),
                 exitcode => $proc.exitcode,
                 output   => $proc.out.slurp: :close).throw;
         }
         $proc
     }
+
+    sub update-submodules($path) {
+    }
+
     my @shas;
     for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha,
             $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
@@ -116,6 +137,40 @@ method create-archive(SourceSpec $source-spec --> Str) {
 
         validate run qw|git reset --hard|, $to-use,
             :cwd($repo-dir), :merge;
+
+        # updating submodules
+        {
+            validate run qw|git submodule sync --quiet|, :cwd($repo-dir), :merge;
+
+            validate run qw|git submodule --quiet init|, :cwd($repo-dir), :merge;
+
+            my $submod-status = validate(run(qw|git submodule status|, :cwd($repo-dir), :out)).out.slurp: :close;
+
+            for $submod-status.lines -> $line {
+                unless $line ~~ / ^ . <[ 0..9 a..f ]>+ ' ' (\H+) [$ | ' '] / {
+                    X::ArchiveTextCreationException.new(
+                            text => "Failed to extract submodules. Output was: " ~ $submod-status;
+                        ).throw;
+                }
+                my $path = $0;
+                my $name = $path.IO.basename;
+                my $mod-ref-dir = $!ref-dir.add($name).absolute.IO;
+                my $url = validate(run(qw|git config|, "submodule.$path.url", :cwd($repo-dir), :out)).out.slurp: :close;
+                $url .= trim;
+                unless ($url) {
+                    X::ArchiveTextCreationException.new(text => "Failed to extract submodule url.").throw;
+                }
+
+                if $mod-ref-dir.e {
+                    validate run qw|git fetch --quiet --all|, :cwd($mod-ref-dir), :merge;
+                }
+                else {
+                    validate run qw|git clone --quiet --bare|, $url, $mod-ref-dir, :merge;
+                }
+
+                validate run qw|git submodule --quiet update --reference|, $mod-ref-dir, $path, :cwd($repo-dir), :merge;
+            }
+        }
 
         @shas.push: do if $commit eq "LATEST" {
             my $proc = validate run qw|git rev-parse HEAD|, :cwd($repo-dir), :out;

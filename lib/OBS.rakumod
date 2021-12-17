@@ -179,7 +179,7 @@ method process-worklist() is serial-dedup {
 
     CATCH {
         default {
-            error "Failed starting OBS run: " ~ .message ~ .backtrace.Str
+            error "Failed processing OBS worklist: " ~ .message ~ .backtrace.Str
         }
     }
 }

@@ -1,6 +1,9 @@
 use Test;
 use File::Temp;
+use Log::Async;
 use SourceArchiveCreator;
+
+logger.untapped-ok = True;
 
 my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
 my $sac-store-dir = $work-dir.add('sac-store');
