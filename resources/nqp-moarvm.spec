@@ -41,7 +41,7 @@ to implement a full Raku compiler. This package provides NQP running
 on the MoarVM virtual machine.
 
 %prep
-%setup -q
+%setup -q -n %{nqp_rev}-nqp
 %patch0 -p1
 
 %build
