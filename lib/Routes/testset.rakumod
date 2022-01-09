@@ -15,6 +15,9 @@ sub testset-routes() is export {
                     user-url => .user-url,
                     commit-sha => .commit-sha,
                     status => .status,
+                    status-indicator-class =>
+                        (.status != DB::DONE ?? "in-progress" !!
+                        [&&] .tests.Seq.map({.status == DB::SUCCESS}) ?? "success" !! "failure"),
                     error => .error,
                     rakudo-git-url => .source-spec.rakudo-git-url,
                     rakudo-commit-sha => .source-spec.rakudo-commit-sha,
@@ -23,11 +26,25 @@ sub testset-routes() is export {
                     moar-git-url => .source-spec.moar-git-url,
                     moar-commit-sha => .source-spec.moar-commit-sha,
                     source-link => "/sources/" ~ .source-archive-id,
-                    tests => .platform-test-sets.map(*.tests).flat.map({%(
-                        id => .id,
-                        name => .name,
-                        status => .status,
-                        url => "/test/{.id}",
+                    backends => .platform-test-sets.Seq.map({%(
+                        name => do given .platform {
+                            when DB::AZURE { "Azure CI" }
+                            when DB::OBS   { "OBS" }
+                        },
+                        tests => .tests.Seq.map({%(
+                            status-indicator-class =>
+                                .status == DB::SUCCESS ?? "success" !!
+                                .status == DB::IN_PROGRESS ?? "in-progress" !!
+                                .status == DB::NOT_STARTED ?? "not-started" !!
+                                "failure",
+                            name => .name,
+                            status => .status,
+                            created-at => .creation,
+                            started-at => .test-started-at,
+                            finished-at => .test-finished-at,
+                            backend-url => "todo",
+                            log-url => "/test/{.id}/log",
+                        )}),
                     )}),
                 ;
                 template "testset.crotmp", %data;

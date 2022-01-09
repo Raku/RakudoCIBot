@@ -11,7 +11,7 @@ use SourceArchiveCreator;
 sub routes(SourceArchiveCreator $sac) is export {
     template-location 'resources/templates/';
     route {
-        #resources-from %?RESOURCES;
+        resources-from %?RESOURCES;
         #templates-from-resources prefix => 'templates';
 
         get -> "css", *@path {

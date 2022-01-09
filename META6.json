@@ -82,8 +82,6 @@
         "static/doc/faq.md",
         "static/css/normalize.css",
         "static/css/main.css",
-        "static/css/bulma.css",
-        "static/css/bulma.css.map",
         "rakudo-moarvm.spec",
         "nqp-moarvm.spec",
         "moarvm.spec"

@@ -1,28 +1,57 @@
 <:use 'page.crotmp'>
 <|page('Test Set')>
-<h1>Test Set <.id></h1>
+<h1>Test Set <.id> <div class="status-indicator <.status-indicator-class>"></div></h1>
 
-<ul>
-<li>ID: <.id>
-<li>Created at: <.created-at>
-<li>Project: <.project>
-<li>GitHub: <.user-url>
-<li>Commit: <.commit-sha>
-<li>Status: <.status>
-<li>Error: <.error>
-<li>Rakudo Repo: <.rakudo-git-url>
-<li>Rakudo SHA: <.rakudo-commit-sha>
-<li>NQP Repo: <.nqp-git-url>
-<li>NQP SHA: <.nqp-commit-sha>
-<li>Moar Repo: <.moar-git-url>
-<li>Moar SHA: <.moar-commit-sha>
-<li><a href="<.source-link>">Source</a>
-</ul>
+<div class="cols">
+  <div class="col"><ul>
+    <li>Created at: <.created-at>
+    <li>Project: <.project>
+    <li>Commit: <a href="<.user-url>"><.commit-sha></a>
+    <li><a href="<.source-link>">Source archive</a>
+    <li>Status: <.status>
+    <?.error><li>Error: <.error></?>
+  </ul></div>
+  <div class="col"><ul>
+    <li>Rakudo Repo: <a href="<.rakudo-git-url>"><.rakudo-git-url></a>
+    <li>Rakudo SHA: <.rakudo-commit-sha>
+    <li>NQP Repo: <a href="<.nqp-git-url>"><.nqp-git-url></a>
+    <li>NQP SHA: <.nqp-commit-sha>
+    <li>Moar Repo: <a href="<.moar-git-url>"><.moar-git-url></a>
+    <li>Moar SHA: <.moar-commit-sha>
+  </ul></div>
+</div>
 
-<h2>Tests</h2>
-<ul>
+<h1>Tests</h1>
+<@.backends>
+<h2><.name></h2>
+<table>
+<thead><tr>
+  <td></td>
+  <td>Name</td>
+  <td>Status</td>
+  <td>Times</td>
+  <td>CI Link</td>
+  <td>Log</td>
+</tr></thead>
+<tbody>
 <@.tests>
-<li><a href="<.url>"><.id></a> <.name> <.status>
+<tr>
+  <td><div class="status-indicator <.status-indicator-class>"></div></td>
+  <td><.name></td>
+  <td><.status></td>
+
+  <td>
+    Created: <.created-at><br/>
+    Started: <.started-at><br/>
+    Finished: <.finished-at><br/>
+  </td>
+
+  <td><a href="<.backend-url>">CI</a></td>
+  <td><a href="<.log-url>">Log</a></td>
+</tr>
 </@>
-</ul>
+</tbody>
+</table>
+</@>
+
 </|>

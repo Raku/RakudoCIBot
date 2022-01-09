@@ -261,3 +261,39 @@ textarea {
   }
 }
 
+
+
+
+
+
+
+/*
+ * Column layout
+ */
+
+.cols {
+    display: flex;
+    flex-wrap: wrap;
+}
+.cols > .col {
+    flex: 1;
+    min-width: 300px;
+}
+
+.status-indicator {
+    height: 2rem;
+    width: 2rem;
+    display: inline-block;
+}
+.status-indicator.not-started {
+    background-color: grey;
+}
+.status-indicator.in-progress {
+    background-color: yellow;
+}
+.status-indicator.success {
+    background-color: green;
+}
+.status-indicator.failure {
+    background-color: red;
+}
