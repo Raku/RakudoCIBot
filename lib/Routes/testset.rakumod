@@ -25,7 +25,7 @@ sub testset-routes() is export {
                     nqp-commit-sha => .source-spec.nqp-commit-sha,
                     moar-git-url => .source-spec.moar-git-url,
                     moar-commit-sha => .source-spec.moar-commit-sha,
-                    source-link => "/sources/" ~ .source-archive-id,
+                    source-link => "/source/" ~ .source-archive-id,
                     backends => .platform-test-sets.Seq.map({%(
                         name => do given .platform {
                             when DB::AZURE { "Azure CI" }
