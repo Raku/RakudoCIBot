@@ -290,17 +290,17 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha! --> SourceSp
         when DB::RAKUDO {
             return SourceSpec.new:
                 rakudo-git-url => $git-url,
-                rakudo-commit => $commit-sha;
+                rakudo-commit-sha => $commit-sha;
         }
         when DB::NQP {
             return SourceSpec.new:
                 nqp-git-url => $git-url,
-                nqp-commit => $commit-sha;
+                nqp-commit-sha => $commit-sha;
         }
         when DB::MOAR {
             return SourceSpec.new:
                 moar-git-url => $git-url,
-                moar-commit => $commit-sha;
+                moar-commit-sha => $commit-sha;
         }
     }
 }
