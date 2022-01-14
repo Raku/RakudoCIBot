@@ -168,7 +168,7 @@ method retrieve-default-branch-commits($project, $repo, :$last-cursor) {
                 :$branch,
             ;
         };
-    dd @commits;
+
     %(
         last-cursor => @commits ?? @commits[*-1].commit-sha !! $last-cursor,
         :@commits,
