@@ -103,27 +103,38 @@ method !req-graphql($query) {
 }
 ]
 
-method retrieve-default-branch-commits($project, $repo, DateTime $since) {
-    my $since-str = $since.Str;
-    $!gh.graphql.query(q:to<EOQ>).data;
-        {
-          repository(name: "\qq[$repo]", owner: "\qq[$project]") {
-            defaultBranchRef {
-              name
-              target {
-                ... on Commit {
-                  history(since: "\qq[$since-str]") {
-                    edges {
-                      cursor
-                      node {
-                        oid
-                        message
-                        messageBody
-                        author {
-                          user {
-                            login
-                            name
+method retrieve-default-branch-commits($project, $repo, :$last-cursor) {
+    my $batch-count = config.github-check-batch-count;
+    my $running-cursor;
+    my $backup-counter = 100;
+    my $git-url;
+    my $branch;
+    my @commits;
+    LOOPER: loop {
+        my $limiter = ($running-cursor ?? "after: \"$running-cursor\", " !! "") ~ "first: " ~ ($last-cursor ?? $batch-count !! "1");
+        my %data = $!gh.graphql.query(q:to<EOQ>).data;
+            {
+              repository(name: "\qq[$repo]", owner: "\qq[$project]") {
+                url
+                defaultBranchRef {
+                  name
+                  target {
+                    ... on Commit {
+                      history(\qq[$limiter]) {
+                        nodes {
+                          oid
+                          commitUrl
+                          message
+                          messageBody
+                          author {
+                            user {
+                              login
+                              name
+                            }
                           }
+                        }
+                        pageInfo {
+                          endCursor
                         }
                       }
                     }
@@ -131,9 +142,37 @@ method retrieve-default-branch-commits($project, $repo, DateTime $since) {
                 }
               }
             }
-          }
+            EOQ
+        $git-url = %data<data><repository><url> ~ ".git"           unless $git-url;
+        $branch  = %data<data><repository><defaultBranchRef><name> unless $branch;
+        for %data<data><repository><defaultBranchRef><target><history><nodes><> -> %commit {
+            if $backup-counter-- == 0 {
+                error "Didn't find last-cursor. Aborting retrieving more commits. Started search at @commits[0]<oid>, stopped at %commit<oid>.";
+                last LOOPER;
+            }
+            last LOOPER if  $last-cursor && %commit<oid> eq $last-cursor;
+            @commits.push: %commit;
+            last LOOPER if  !$last-cursor;
         }
-        EOQ
+        $running-cursor = %data<data><repository><defaultBranchRef><target><history><pageInfo><endCursor>;
+    }
+
+    @commits = @commits
+        .reverse
+        .map: -> %commit {
+            GitHubCITestRequester::CommitTask.new:
+                :$repo,
+                commit-sha   => %commit<oid>,
+                user-url     => %commit<commitUrl>,
+                :$git-url,
+                :$branch,
+            ;
+        };
+    dd @commits;
+    %(
+        last-cursor => @commits ?? @commits[*-1].commit-sha !! $last-cursor,
+        :@commits,
+    )
 }
 
 method retrieve-default-branch-comments($repo, $project) {
@@ -162,74 +201,91 @@ method retrieve-default-branch-comments($repo, $project) {
         EOQ
 }
 
-method retrieve-pulls($project, $repo, $count) {
-    my %data = $!gh.graphql.query(q:to<EOQ>).data;
-        {
-          repository(name: "\qq[$repo]", owner: "\qq[$project]") {
-            pullRequests(first: \qq[$count], orderBy: {direction: DESC, field: UPDATED_AT}) {
-              edges {
-                cursor
-                node {
-                  body
-                  state
-                  title
-                  number
-                  url
-                  headRefName
-                  headRepository {
-                    url
-                  }
-                  commits(last: 1) {
-                    nodes {
-                      url
-                      commit {
-                        oid
-                      }
-                    }
-                  }
-                  comments(last: 100) {
-                    nodes {
+method retrieve-pulls($project, $repo, :$last-cursor is copy) {
+    my $batch-count = config.github-check-batch-count;
+    my @prs;
+    loop {
+        my $limiter = $last-cursor.defined ?? "after: \"$last-cursor\", first: $batch-count" !! "last: 1";
+        my %data = $!gh.graphql.query(q:to<EOQ>).data;
+            {
+              repository(name: "\qq[$repo]", owner: "\qq[$project]") {
+                pullRequests(\qq[$limiter], orderBy: {direction: ASC, field: UPDATED_AT}) {
+                  edges {
+                    cursor
+                    node {
                       body
-                      createdAt
-                      id
-                      updatedAt
+                      state
+                      title
+                      number
                       url
+                      headRefName
+                      headRepository {
+                        url
+                      }
+                      commits(last: 1) {
+                        nodes {
+                          url
+                          commit {
+                            oid
+                          }
+                        }
+                      }
+                      comments(last: 100) {
+                        nodes {
+                          body
+                          createdAt
+                          id
+                          updatedAt
+                          url
+                        }
+                      }
                     }
                   }
                 }
               }
             }
-          }
+            EOQ
+        my @new-prs = %data<data><repository><pullRequests><edges>.map(-> %pull-data is copy {
+                %pull-data = %pull-data<node>;
+                GitHubCITestRequester::PRTask.new:
+                    :$repo,
+                    git-url      => %pull-data<headRepository><url> ~ '.git',
+                    head-branch  => %pull-data<headRefName>,
+                    number       => %pull-data<number>,
+                    title        => %pull-data<title>,
+                    body         => %pull-data<body>,
+                    state        => %pull-data<state>,
+                    user-url     => %pull-data<url>,
+                    comments     => %pull-data<comments><nodes>.map({
+                        GitHubCITestRequester::PRCommentTask.new:
+                            id         => $_<id>,
+                            created-at => $_<createdAt>,
+                            updated-at => $_<updatedAt>,
+                            pr-number  => %pull-data<number>,
+                            user-url   => $_<url>,
+                            body       => $_<body>,
+                    }),
+                    commit-task  => GitHubCITestRequester::PRCommitTask.new(
+                        :$repo,
+                        pr-number => %pull-data<number>,
+                        commit-sha => %pull-data<commits><nodes>[0]<commit><oid>,
+                        user-url => %pull-data<commits><nodes>[0]<url>,
+                    ),
+                ;
+            }
+        );
+        if @new-prs {
+            @prs.append: @new-prs;
+            $last-cursor = %data<data><repository><pullRequests><edges>[*-1]<cursor>;
         }
-        EOQ
-    %data<data><repository><pullRequests><edges>.map: -> %pull-data is copy {
-        %pull-data = %pull-data<node>;
-        GitHubCITestRequester::PRTask.new:
-            :$repo,
-            git-url      => %pull-data<headRepository><url> ~ '.git',
-            head-branch  => %pull-data<headRefName>,
-            number       => %pull-data<number>,
-            title        => %pull-data<title>,
-            body         => %pull-data<body>,
-            state        => %pull-data<state>,
-            user-url     => %pull-data<url>,
-            comments     => %pull-data<comments><nodes>.map({
-                GitHubCITestRequester::PRCommentTask.new:
-                    id         => $_<id>,
-                    created-at => $_<createdAt>,
-                    updated-at => $_<updatedAt>,
-                    pr-number  => %pull-data<number>,
-                    user-url   => $_<url>,
-                    body       => $_<body>,
-            }),
-            commit-task  => GitHubCITestRequester::PRCommitTask.new(
-                :$repo,
-                pr-number => %pull-data<number>,
-                commit-sha => %pull-data<commits><nodes>[0]<commit><oid>,
-                user-url => %pull-data<commits><nodes>[0]<url>,
-            ),
-        ;
-    };
+        else {
+            last;
+        }
+    }
+    %(
+        :$last-cursor,
+        :@prs;
+    );
 }
 
 method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, Str() :$id!, DateTime:D :$started-at!) {

@@ -11,6 +11,14 @@ use Config;
 
 unit class GitHubCITestRequester does CITestStatusListener;
 
+class CommitTask {
+    has $.repo is required;
+    has $.commit-sha is required;
+    has $.user-url is required;
+    has $.git-url is required;
+    has $.branch is required;
+}
+
 class PRCommentTask {
     has $.id is required;
     has $.created-at is required;
@@ -49,10 +57,11 @@ has $!input-task-supply = $!input-task-supplier.Supply;
 submethod TWEAK() {
     $!input-task-supply.tap: -> $task {
         given $task {
-            when PRTask { self!process-pr-task($task) }
+            when CommitTask    { self!process-commit-task($task) }
+            when PRTask        { self!process-pr-task($task) }
             when PRCommentTask { self!process-pr-comment-task($task) }
-            when PRCommitTask { self!process-pr-commit-task($task) }
-            default { die "Unknown task: " ~ $task.^name }
+            when PRCommitTask  { self!process-pr-commit-task($task) }
+            default            { die "Unknown task: " ~ $task.^name }
         }
     }
 }
@@ -98,7 +107,8 @@ method !process-pr-commit-task(PRCommitTask $commit) {
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
 
     my $ts = DB::CITestSet.^all.first({
-            $_.pr.number == $commit.pr-number
+            $_.event-type ⊂ (DB::PR,)
+            && $_.pr.number == $commit.pr-number
             && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
             && $_.commit-sha eq $commit.commit-sha
     });
@@ -106,25 +116,61 @@ method !process-pr-commit-task(PRCommitTask $commit) {
         info "GitHub: Adding PR commit: " ~ $commit.commit-sha;
         DB::CITestSet.^create:
             event-type => DB::PR,
-            project => self!repo-to-db-project($commit.repo),
-            git-url => $pr.git-url,
+            project    => self!repo-to-db-project($commit.repo),
+            git-url    => $pr.git-url,
             commit-sha => $commit.commit-sha,
-            user-url => $commit.user-url,
+            user-url   => $commit.user-url,
             :$pr,
             ;
         self.process-worklist;
     }
 }
+
 method !process-pr-comment-task(PRCommentTask $comment) {
     # TODO
     info "Adding PR comment: " ~ $comment.created-at;
 }
 
+method !process-commit-task(CommitTask $commit) {
+    my $ts = DB::CITestSet.^all.first({
+        $_.event-type ⊂ (DB::MAIN_BRANCH,)
+        && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
+        && $_.commit-sha eq $commit.commit-sha
+    });
+    without $ts {
+        info "GitHub: Adding commit: " ~ $commit.commit-sha;
+        DB::CITestSet.^create:
+            event-type => DB::MAIN_BRANCH,
+            project    => self!repo-to-db-project($commit.repo),
+            git-url    => $commit.git-url,
+            commit-sha => $commit.commit-sha,
+            user-url   => $commit.user-url,
+            ;
+        self.process-worklist;
+    }
+}
+
 method poll-for-changes() is serial-dedup {
     trace "GitHub: Polling for changes";
     for config.projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
+        my $db-project = self!repo-to-db-project($repo);
+        my $state = DB::GitHubPullState.^all.first({ $_.project ⊂ ($db-project,) }) // DB::GitHubPullState.^create(project => $db-project);
+
         # PRs
-        self.add-task($_) for $!github-interface.retrieve-pulls($project, $repo, config.github-pullrequest-check-count);
+        my %pull-data = $!github-interface.retrieve-pulls($project, $repo, |($state.last-pr-cursor ?? last-cursor => $state.last-pr-cursor !! ()));
+        self.add-task($_) for %pull-data<prs><>;
+        if %pull-data<last-cursor> {
+            $state.last-pr-cursor = %pull-data<last-cursor>;
+            $state.^save;
+        }
+
+        # Default branch commits
+        my %commit-data = $!github-interface.retrieve-default-branch-commits($project, $repo, |($state.last-default-branch-cursor ?? last-cursor => $state.last-default-branch-cursor !! ()));
+        self.add-task($_) for %commit-data<commits><>;
+        if %commit-data<last-cursor> {
+            $state.last-default-branch-cursor = %commit-data<last-cursor>;
+            $state.^save;
+        }
     }
     CATCH {
         default {

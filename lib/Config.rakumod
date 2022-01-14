@@ -15,7 +15,7 @@ class Config {
     has @.obs-packages;
 
     #| How many latest-changes-PullRequests the GitHub polling logic should retrieve.
-    has $.github-pullrequest-check-count;
+    has $.github-check-batch-count;
 
     has $.sac-work-dir;
     has $.sac-store-dir;
@@ -45,7 +45,7 @@ class Config {
             obs-min-run-duration => %config<obs-min-run-duration>,
             obs-packages         => |%config<obs-packages>,
 
-            github-pullrequest-check-count => %config<github-pullrequest-check-count>,
+            github-check-batch-count => %config<github-check-batch-count>,
 
             sac-work-dir  => %config<sac-work-dir>,
             sac-store-dir => %config<sac-store-dir>,

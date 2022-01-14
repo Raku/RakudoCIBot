@@ -65,6 +65,7 @@ enum CommandStatus <
 model CITest { ... }
 model CIPlatformTestSet { ... }
 model CITestSet { ... }
+model GitHubPullState { ... }
 model GitHubPR { ... }
 model Command { ... }
 
@@ -157,6 +158,15 @@ model CITestSet is rw is table<citest_set> {
     }
 }
 
+model GitHubPullState is rw is table<github_pull_state> {
+    has UInt          $.id                         is serial;
+    has DateTime      $.creation                   is column .= now;
+    has DB::Project   $.project                    is column;
+
+    has Str           $.last-default-branch-cursor is column{ :nullable };
+    has Str           $.last-pr-cursor             is column{ :nullable };
+}
+
 model GitHubPR is rw is table<github_pr> {
     has UInt          $.id            is serial;
     has DateTime      $.creation      is column .= now;
@@ -196,9 +206,9 @@ model Command is rw is table<command> {
 }
 
 our sub drop-db() {
-    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPR, DB::Command).drop;
+    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPullState, DB::GitHubPR, DB::Command).drop;
 }
 
 our sub create-db() {
-    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPR, DB::Command).create;
+    schema(DB::CITest, CIPlatformTestSet, DB::CITestSet, DB::GitHubPullState, DB::GitHubPR, DB::Command).create;
 }
