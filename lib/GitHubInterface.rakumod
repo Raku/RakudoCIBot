@@ -94,15 +94,6 @@ method parse-hook-request($event, %json) {
     }
 }
 
-#`[
-method !req-graphql($query) {
-    my $response = await $!cro.post($gql-endpoint, body => {
-        :$query;
-    });
-    await $response.body;
-}
-]
-
 method retrieve-default-branch-commits($project, $repo, :$last-cursor) {
     my $batch-count = config.github-check-batch-count;
     my $running-cursor;
@@ -173,32 +164,6 @@ method retrieve-default-branch-commits($project, $repo, :$last-cursor) {
         last-cursor => @commits ?? @commits[*-1].commit-sha !! $last-cursor,
         :@commits,
     )
-}
-
-method retrieve-default-branch-comments($repo, $project) {
-    $!gh.graphql.query(q:to<EOQ>).data;
-        {
-          repository(name: "\qq[$repo]", owner: "\qq[$project]") {
-            commitComments(last: 10, after: "Y3Vyc29yOnYyOpHOAzEv0w==") {
-              edges {
-                cursor
-                node {
-                  body
-                  commit {
-                    commitUrl
-                    oid
-                    associatedPullRequests(last: 1) {
-                      nodes {
-                        merged
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        EOQ
 }
 
 method retrieve-pulls($project, $repo, :$last-cursor is copy) {
