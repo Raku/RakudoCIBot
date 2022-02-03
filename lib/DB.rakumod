@@ -81,7 +81,7 @@ model CITest is rw is table<citest> {
     has Str                   $.log                   is column{ :nullable, :type<text> };
 
     # Responsibility of the GitHubCITestRequester
-    has UInt                  $.github-id             is column{ :nullable };
+    has Str(Int)              $.github-id             is column{ :nullable };
     has DB::CITestStatus      $.status-pushed         is column = NOT_STARTED;
 }
 
