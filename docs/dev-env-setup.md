@@ -4,12 +4,13 @@ How to set up a development environment
 Install and set up Postgres
 ---------------------------
 
-    sudo dnf install postgresql postgresql-server
-    sudo initdb
+    sudo dnf install postgresql postgresql-server libpq-devel
+    sudo /usr/bin/postgresql-setup --initdb
     sudo systemctl start postgresql
 
     sudo -u postgres psql
-        create database rcb_dev owner your-user
+        CREATE USER your-user WITH CREATEDB
+        CREATE DATABASE rcb_dev OWNER your-user
         \q
 
 
