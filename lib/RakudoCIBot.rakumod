@@ -28,13 +28,11 @@ submethod TWEAK() {
 
     logger.send-to($*OUT, :level(* >= Loglevels::{config.log-level}));
 
-#`{
     red-defaults('Pg', |%(
         config.db,
         host => config.db<host> || Str
     ));
-}
-    red-defaults('SQLite', database => 'test.sqlite3');
+    #red-defaults('SQLite', database => 'test.sqlite3');
 
 
     #DB::drop-db;
