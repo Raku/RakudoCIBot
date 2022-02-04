@@ -48,8 +48,6 @@ method process-worklist() is serial-dedup {
             $running-pts = $_;
             trace "OBS: Starting new run: " ~ $running-pts.id;
 
-
-
             my $source-id = $running-pts.test-set.source-archive-id;
             for "moar", "moarvm",
                     "nqp", "nqp-moarvm",
@@ -60,8 +58,7 @@ method process-worklist() is serial-dedup {
 
                 my $archive-path = $!source-archive-creator.get-archive-path($source-id, $project);
                 $!interface.upload-file($obs-project, "PTS-ID-" ~ $running-pts.id, :blob(""));
-                $!interface.upload-file($obs-project, $source-id ~ "-" ~ $project ~ ".tar.xz",
-                :path($archive-path));
+                $!interface.upload-file($obs-project, $source-id ~ "-" ~ $project ~ ".tar.xz", :path($archive-path));
                 my $spec = %?RESOURCES{$obs-project ~ ".spec"}.slurp;
                 $spec ~~ s{ '<moar_rev>' }   = $source-id;
                 $spec ~~ s{ '<nqp_rev>' }    = $source-id;
@@ -172,6 +169,8 @@ method process-worklist() is serial-dedup {
             $running-pts.obs-finished-at = DateTime.now;
             $running-pts.^save;
             $!testset-manager.platform-test-set-done($running-pts);
+            # We are done. Makes sense to have a look whether there already is a new test set to test.
+            self.process-worklist();
         }
         else {
             $running-pts.^save;
