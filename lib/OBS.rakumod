@@ -40,6 +40,7 @@ method process-worklist() is serial-dedup {
     }
     elsif @running-ptses.elems == 0 {
         # No in progress test set found. Let's see if we can start a new one.
+        trace "OBS: Nothing in progress. Looking if there is a new test set to start.";
         with DB::CIPlatformTestSet.^all.first({
                 $_.platform ⊂ (DB::OBS,) &&
                 $_.status ⊂ (DB::PLATFORM_IN_PROGRESS,) &&
@@ -131,7 +132,7 @@ method process-worklist() is serial-dedup {
             $test.status = $status;
 
             if $status ⊂ (DB::SUCCESS, DB::FAILURE, DB::ABORTED) {
-                trace "OBS: Test finished: " ~ $test.id // "new test";
+                trace "OBS: Test finished: " ~ ($test.id || "new test");
                 $test.test-finished-at //= DateTime.now;
                 $test.log //= do {
                     my $log;
