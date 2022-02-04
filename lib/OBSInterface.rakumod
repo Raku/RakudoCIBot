@@ -29,6 +29,11 @@ submethod TWEAK() {
             Accept => 'application/xml',
             Authorization => $!auth-str,
         ];
+        #`[
+        tls => {
+            ssl-key-log-file => 'ssl-key-log-file',
+        };
+        ]
 }
 
 method !req-plain($method, $url-path, $body-data?) {
