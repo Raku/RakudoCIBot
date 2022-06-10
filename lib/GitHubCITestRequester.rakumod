@@ -102,14 +102,14 @@ method !repo-to-db-project($project) {
 method !process-pr-commit-task(PRCommitTask $commit) {
     my $pr = DB::GitHubPR.^all.first({
                 $_.number == $commit.pr-number
-                && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
+                && $_.project == self!repo-to-db-project($commit.repo)
             });
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
 
     my $ts = DB::CITestSet.^all.first({
-            $_.event-type ⊂ (DB::PR,)
+            $_.event-type == DB::PR
             && $_.pr.number == $commit.pr-number
-            && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
+            && $_.project == self!repo-to-db-project($commit.repo)
             && $_.commit-sha eq $commit.commit-sha
     });
     without $ts {
@@ -133,8 +133,8 @@ method !process-pr-comment-task(PRCommentTask $comment) {
 
 method !process-commit-task(CommitTask $commit) {
     my $ts = DB::CITestSet.^all.first({
-        $_.event-type ⊂ (DB::MAIN_BRANCH,)
-        && $_.project ⊂ (self!repo-to-db-project($commit.repo),)
+        $_.event-type == DB::MAIN_BRANCH
+        && $_.project == self!repo-to-db-project($commit.repo)
         && $_.commit-sha eq $commit.commit-sha
     });
     without $ts {
@@ -154,7 +154,7 @@ method poll-for-changes() is serial-dedup {
     trace "GitHub: Polling for changes";
     for config.projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
         my $db-project = self!repo-to-db-project($repo);
-        my $state = DB::GitHubPullState.^all.first({ $_.project ⊂ ($db-project,) }) // DB::GitHubPullState.^create(project => $db-project);
+        my $state = DB::GitHubPullState.^all.first({ $_.project == $db-project }) // DB::GitHubPullState.^create(project => $db-project);
 
         # PRs
         my %pull-data = $!github-interface.retrieve-pulls($project, $repo, |($state.last-pr-cursor ?? last-cursor => $state.last-pr-cursor !! ()));
@@ -206,7 +206,7 @@ method !url-to-project($url) {
 ]
 
 method process-worklist() is serial-dedup {
-    for DB::CITestSet.^all.grep(*.status ⊂ [DB::NEW]) -> $test-set {
+    for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
         trace "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
             project => $test-set.project,
