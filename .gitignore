@@ -1,8 +1,10 @@
 *.pem
+*.iml
 .precomp/
 .idea/
 config-dev.yml
 run.sh
+test.sqlite3
 work/
 
 posts/
