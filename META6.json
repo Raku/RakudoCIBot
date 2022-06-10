@@ -7,14 +7,14 @@
     "depends": [
         "Cro::HTTP:ver<0.8.7>",
         "Cro::WebApp:ver<0.8.7>",
-        "LibXML:ver<0.6.11>",
-        "Base64:ver<0.0.2>",
+        "LibXML:ver<0.7.4>:auth<zef:dwarring>",
+        "Base64:ver<0.0.2>:auth<github:ugexe>",
         "OO::Monitors:ver<1.1.1>",
-        "Red:ver<0.1.52>",
-        "Log::Async:ver<0.0.7>",
-        "JSON::JWT:ver<1.0>",
+        "Red:ver<0.1.60>:auth<zef:FCO>:api<2>",
+        "Log::Async:ver<0.0.8>",
+        "JSON::JWT:ver<1.1.1>:auth<zef:raku-community-modules>",
         "YAMLish:ver<0.0.6>",
-        "WebService::GitHub:ver<0.1.0>"
+        "WebService::GitHub:ver<0.2.2>:auth<zef:raku-community-modules>:api<1>"
     ],
     "test-depends": [
         "Test::SourceFiles",
