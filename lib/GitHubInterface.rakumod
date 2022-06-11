@@ -26,6 +26,22 @@ submethod TWEAK(:$app-id!, :$pem!) {
 
 method parse-hook-request($event, %json) {
     given $event {
+        when 'check_suite' {
+            if %json<action> eq 'requested' {
+                if %json<check_suite><pull_requests>.elems == 0 {
+                    # Simple commit
+                    info "GitHubInterface: Received PUSH request for " ~ %json<repository><name> ~ " " ~ %json<check_suite><head_sha>;
+                    $.processor.add-task: GitHubCITestRequester::CommitTask.new:
+                        repo       => %json<repository><name>,
+                        commit-sha => %json<check_suite><head_sha>,
+                        user-url   => %json<repository><html_url> ~ "/commit/" ~ %json<check_suite><head_sha>,
+                        git-url    => %json<repository><clone_url>,
+                        branch     => %json<check_suite><head_branch>,
+                    ;
+                }
+            }
+        }
+        #`[
         when 'pull_request' {
             if %json<action> eq 'opened' {
                 my $project = do given %json<pull_request><base><repo><full_name> {
@@ -51,7 +67,6 @@ method parse-hook-request($event, %json) {
                 ;
             }
         }
-        #`[
         when 'issue_comment' {
             if %json<action> eq "created" && (%json<issue><pull_request>:exists) {
                 with $.processor { .new-pr-comment:

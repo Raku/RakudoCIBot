@@ -1,7 +1,15 @@
 use Cro::HTTP::Router;
 
-sub github-hook-routes() is export {
+sub github-hook-routes($github-interface) is export {
     route {
+        post -> 'github-hook', :$X-Github-Event! is header {
+            request-body -> %json {
+                $github-interface.parse-hook-request($X-Github-Event, %json);
+                content 'text/txt', 'Hi GitHub check_suite request';
+            }
+        }
+
+    #`[
         post -> 'github-hook', :$X-Github-Event! is header where 'pull_request' {
             request-body -> %json {
                 if %json<action> eq 'opened' {
@@ -26,12 +34,12 @@ sub github-hook-routes() is export {
                 }
             }
         }
-
         post -> 'github-hook', :$X-Github-Event! is header {
             request-body -> %json {
                 say "Unknown event type $X-Github-Event received";
                 content 'text/txt', 'Hi GitHub whatever';
             }
         }
+    ]
     }
 }

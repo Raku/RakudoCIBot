@@ -7,8 +7,9 @@ use Routes::testset;
 use Routes::source;
 use Routes::GitHubHook;
 use SourceArchiveCreator;
+use GitHubInterface;
 
-sub routes(SourceArchiveCreator $sac) is export {
+sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface) is export {
     template-location 'resources/templates/';
     route {
         resources-from %?RESOURCES;
@@ -28,6 +29,6 @@ sub routes(SourceArchiveCreator $sac) is export {
         include test-routes;
         include testset-routes;
         include source-routes($sac);
-        include github-hook-routes;
+        include github-hook-routes($github-interface);
     }
 }
