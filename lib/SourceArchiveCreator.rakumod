@@ -6,11 +6,11 @@ class SourceSpec {
     # A Git SHA-1 is a length 40 hex number
     subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest /;
 
-    has Str $.rakudo-git-url = config.projects<rakudo>.repo-url;
+    has Str $.rakudo-git-url = config.projects.rakudo.repo-url;
     has SHA1 $.rakudo-commit-sha = 'LATEST';
-    has Str $.nqp-git-url = config.projects<nqp>.repo-url;
+    has Str $.nqp-git-url = config.projects.nqp.repo-url;
     has SHA1 $.nqp-commit-sha = 'LATEST';
-    has Str $.moar-git-url = config.projects<moar>.repo-url;
+    has Str $.moar-git-url = config.projects.moar.repo-url;
     has SHA1 $.moar-commit-sha = 'LATEST';
     
     submethod TWEAK() {
@@ -85,11 +85,11 @@ has $!moar-dir   = $!work-dir.add('MoarVM');
 has $!ref-dir    = $!work-dir.add('references');
 
 submethod TWEAK() {
-    run qw|git clone|, config.projects<rakudo>.repo-url, $!rakudo-dir
+    run qw|git clone|, config.projects.rakudo.repo-url, $!rakudo-dir
         if !$!rakudo-dir.e;
-    run qw|git clone|, config.projects<nqp>.repo-url, $!nqp-dir
+    run qw|git clone|, config.projects.nqp.repo-url, $!nqp-dir
         if !$!nqp-dir.e;
-    run qw|git clone|, config.projects<moar>.repo-url, $!moar-dir
+    run qw|git clone|, config.projects.moar.repo-url, $!moar-dir
         if !$!moar-dir.e;
     $!ref-dir.mkdir unless $!ref-dir.d;
 }

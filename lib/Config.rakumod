@@ -18,12 +18,18 @@ class ConfigProject {
     }
 }
 
+class ConfigProjects {
+    has $.rakudo is required;
+    has $.nqp is required;
+    has $.moar is required;
+}
+
 class Config {
     has %.db;
 
     has $.github-app-id;
     has $.github-app-key-file;
-    has %.projects;
+    has $.projects;
 
     has $.obs-user;
     has $.obs-password;
@@ -54,7 +60,11 @@ class Config {
 
             github-app-id       => %config<github-app-id>,
             github-app-key-file => %config<github-app-key-file>,
-            projects            => %config<projects>.kv.map(-> $k, $v { $k => ConfigProject.from-config($v) }),
+            projects            => ConfigProjects.new(
+                                       rakudo => ConfigProject.from-config(%config<projects><rakudo>),
+                                       nqp    => ConfigProject.from-config(%config<projects><nqp>),
+                                       moar   => ConfigProject.from-config(%config<projects><moar>),
+                                   ),
 
             obs-user     => %config<obs-user>,
             obs-password => %config<obs-password>,

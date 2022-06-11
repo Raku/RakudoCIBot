@@ -99,13 +99,6 @@ method !repo-to-db-project($project) {
     !! die "unknown project";
 }
 
-method !name-to-db-project($name) {
-    $name eq "rakudo"  ?? DB::RAKUDO
-    !! $name eq "nqp"  ?? DB::NQP
-    !! $name eq "moar" ?? DB::MOAR
-    !! die "unknown project";
-}
-
 method !process-pr-commit-task(PRCommitTask $commit) {
     my $pr = DB::GitHubPR.^all.first({
                 $_.number == $commit.pr-number
@@ -159,12 +152,13 @@ method !process-commit-task(CommitTask $commit) {
 
 method poll-for-changes() is serial-dedup {
     trace "GitHub: Polling for changes";
-    for config.projects.kv.map(-> $k, $v { $k, $v.project, $v.repo }).flat -> $name, $project, $repo {
-        my $db-project = self!name-to-db-project($name);
+    for DB::RAKUDO, config.projects.rakudo,
+        DB::NQP,    config.projects.nqp,
+        DB::MOAR,   config.projects.moar -> $db-project, $project {
         my $state = DB::GitHubPullState.^all.first({ $_.project == $db-project }) // DB::GitHubPullState.^create(project => $db-project);
 
         # PRs
-        my %pull-data = $!github-interface.retrieve-pulls($project, $repo, |($state.last-pr-cursor ?? last-cursor => $state.last-pr-cursor !! ()));
+        my %pull-data = $!github-interface.retrieve-pulls($project.project, $project.repo, |($state.last-pr-cursor ?? last-cursor => $state.last-pr-cursor !! ()));
         self.add-task($_) for %pull-data<prs><>;
         if %pull-data<last-cursor> {
             $state.last-pr-cursor = %pull-data<last-cursor>;
@@ -172,7 +166,7 @@ method poll-for-changes() is serial-dedup {
         }
 
         # Default branch commits
-        my %commit-data = $!github-interface.retrieve-default-branch-commits($project, $repo, |($state.last-default-branch-cursor ?? last-cursor => $state.last-default-branch-cursor !! ()));
+        my %commit-data = $!github-interface.retrieve-default-branch-commits($project.project, $project.repo, |($state.last-default-branch-cursor ?? last-cursor => $state.last-default-branch-cursor !! ()));
         self.add-task($_) for %commit-data<commits><>;
         if %commit-data<last-cursor> {
             $state.last-default-branch-cursor = %commit-data<last-cursor>;
