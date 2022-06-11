@@ -66,11 +66,8 @@ $tsm.register-status-listener: $gh;
 
 ### Testing starts here
 my SourceSpec $source-spec .= new:
-rakudo-repo       => 'rakudo/rakudo',
 rakudo-commit-sha => '0123456789012345678901234567890123456789',
-nqp-repo          => 'Raku/nqp',
 nqp-commit-sha    => '0123456789012345678901234567890123456789',
-moar-repo         => 'MoarVM/MoarVM',
 moar-commit-sha   => '0123456789012345678901234567890123456789',
 ;
 ### Adding a new test set
