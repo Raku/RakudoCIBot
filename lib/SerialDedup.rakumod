@@ -11,23 +11,26 @@ my role SerialDedupStore {
 }
 
 multi sub trait_mod:<is>(Method $r, :$serial-dedup) is export {
+    my Lock $setup-lock .= new;
     $r.wrap(my method ($obj:) {
-        if !$obj.does(SerialDedupStore) {
-            $obj does SerialDedupStore;
+        my $d;
+        $setup-lock.protect: {
+            if !$obj.does(SerialDedupStore) {
+                $obj does SerialDedupStore;
+            }
+            $d := $obj.serial-dedup-store-variable{$r.name} //= SerialDedupData.new;
         }
-        my $d := $obj.serial-dedup-store-variable{$r.name} //= SerialDedupData.new;
 
         if $d.sem.try_acquire() {
             my &next = nextcallee;
+            $d.run-queued = False;
             if $*SERIAL_DEDUP_NO_THREADING {
-                $d.run-queued = False;
                 &next($obj);
                 $d.sem.release();
                 $obj.&$r() if $d.run-queued;
             }
             else {
                 start {
-                    $d.run-queued = False;
                     &next($obj);
                     $d.sem.release();
                     $obj.&$r() if $d.run-queued;

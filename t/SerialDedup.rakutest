@@ -16,9 +16,7 @@ $a.m;
 sleep 0.2;
 is $a.callcount, 1, 'Called when called explicitly';
 
-$a.m;
-$a.m;
-$a.m;
+for ^3 { start { $a.m; } }
 sleep 0.5;
 is $a.callcount, 3, "Colliding calls don't stack up";
 
@@ -30,9 +28,7 @@ is $a.callcount, 3, "Colliding calls don't stack up";
     is $a.callcount, 6, "Disabling instant return dynamically";
 }
 
-$a.m;
-$a.m;
-$a.m;
+for ^3 { start { $a.m; } }
 sleep 0.5;
 is $a.callcount, 8, "Normal behavior after unsetting the no threading dyn var";
 
