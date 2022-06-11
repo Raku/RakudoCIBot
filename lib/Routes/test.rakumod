@@ -19,7 +19,7 @@ sub test-routes() is export {
                     finished-at => .test-finished-at,
                     commit-url => "todo",
                     backend-url => "todo",
-                    test-set-url => "/testset/" ~ .platform-test-set.id,
+                    test-set-url => "/testset/" ~ .platform-test-set.test-set.id,
                 ;
 
                 template "test.crotmp", %data;
