@@ -1,5 +1,6 @@
 *.pem
 *.iml
+*.swp
 .precomp/
 .idea/
 config-dev.yml
