@@ -11,17 +11,17 @@ projects:
     rakudo:
         project: rakudo
         repo: rakudo
-        slug: rakudo/rakudo
+        repo-url: https://github.com/rakudo/rakudo.git
         install-id: 20243470
     nqp:
         project: Raku
         repo: nqp
-        slug: Raku/nqp
+        repo-url: https://github.com/nqp/nqp.git
         install-id: 20243470
     moar:
         project: MoarVM
         repo: MoarVM
-        slug: MoarVM/MoarVM
+        repo-url: https://github.com/MoarVM/MoarVM.git
         install-id: 20243470
 
 obs-user: someuser

@@ -1,5 +1,23 @@
 use YAMLish;
 
+class ConfigProject {
+    has $.project;
+    has $.repo;
+    has $.slug;
+    has $.repo-url;
+    has $.install-id;
+
+    method from-config(%config) {
+        ConfigProject.new:
+            project    => %config<project>,
+            repo       => %config<repo>,
+            slug       => %config<project> ~ "/" ~ %config<repo>,
+            repo-url   => %config<repo-url>,
+            install-id => %config<install-id>,
+        ;
+    }
+}
+
 class Config {
     has %.db;
 
@@ -36,7 +54,7 @@ class Config {
 
             github-app-id       => %config<github-app-id>,
             github-app-key-file => %config<github-app-key-file>,
-            projects            => %config<projects>,
+            projects            => %config<projects>.kv.map(-> $k, $v { $k => ConfigProject.from-config($v) }),
 
             obs-user     => %config<obs-user>,
             obs-password => %config<obs-password>,

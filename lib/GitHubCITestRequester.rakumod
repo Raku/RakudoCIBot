@@ -99,6 +99,13 @@ method !repo-to-db-project($project) {
     !! die "unknown project";
 }
 
+method !name-to-db-project($name) {
+    $name eq "rakudo"  ?? DB::RAKUDO
+    !! $name eq "nqp"  ?? DB::NQP
+    !! $name eq "moar" ?? DB::MOAR
+    !! die "unknown project";
+}
+
 method !process-pr-commit-task(PRCommitTask $commit) {
     my $pr = DB::GitHubPR.^all.first({
                 $_.number == $commit.pr-number
@@ -152,8 +159,8 @@ method !process-commit-task(CommitTask $commit) {
 
 method poll-for-changes() is serial-dedup {
     trace "GitHub: Polling for changes";
-    for config.projects.values.map({ $_<project>, $_<repo> }).flat -> $project, $repo {
-        my $db-project = self!repo-to-db-project($repo);
+    for config.projects.kv.map(-> $k, $v { $k, $v.project, $v.repo }).flat -> $name, $project, $repo {
+        my $db-project = self!name-to-db-project($name);
         my $state = DB::GitHubPullState.^all.first({ $_.project == $db-project }) // DB::GitHubPullState.^create(project => $db-project);
 
         # PRs

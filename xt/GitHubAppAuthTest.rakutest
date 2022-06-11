@@ -6,6 +6,6 @@ die 'export GITHUB_APP_PEM' unless %*ENV<GITHUB_APP_PEM>;
 
 my GitHubAppAuth $ghaa .= new(app-id => $Config::github-app-id, pem-file => %*ENV<GITHUB_APP_PEM>.IO);
 
-dd $ghaa.get-installation-auth(%Config::projects<rakudo><install-id>);
+dd $ghaa.get-installation-auth(%Config::projects<rakudo>.install-id);
 
 done-testing;
