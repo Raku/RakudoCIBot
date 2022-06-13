@@ -40,6 +40,7 @@ class Config {
 
     #| How many latest-changes-PullRequests the GitHub polling logic should retrieve.
     has $.github-check-batch-count;
+    has $.github-max-source-retrieval-retries;
 
     has $.sac-work-dir;
     has $.sac-store-dir;
@@ -73,7 +74,8 @@ class Config {
             obs-min-run-duration => %config<obs-min-run-duration>,
             obs-packages         => |%config<obs-packages>,
 
-            github-check-batch-count => %config<github-check-batch-count>,
+            github-check-batch-count            => %config<github-check-batch-count>,
+            github-max-source-retrieval-retries => %config<github-max-source-retrieval-retries>,
 
             sac-work-dir  => %config<sac-work-dir>,
             sac-store-dir => %config<sac-store-dir>,

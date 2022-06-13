@@ -5,6 +5,7 @@ use Log::Async;
 use SerialDedup;
 use DB;
 use SourceArchiveCreator;
+use Config;
 use Red::Operators:api<2>;
 
 
@@ -35,10 +36,13 @@ method process-worklist() is serial-dedup {
 
                 CATCH {
                     when X::ArchiveCreationException {
-                        $test-set.source-retrieval-retries++;
-                        $test-set.^save;
                         warn "ArchiveCreationException: " ~ $_.message;
-                        # TODO give up after enough retries
+
+                        if ++$test-set.source-retrieval-retries > config.github-max-source-retrieval-retries {
+                            $test-set.status = DB::ERROR;
+                            warn "Now giving up retrieving the source archive: " ~ $test-set.id;
+                        }
+                        $test-set.^save;
                     }
                 }
             }

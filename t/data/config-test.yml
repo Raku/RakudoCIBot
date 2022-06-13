@@ -36,6 +36,7 @@ obs-packages:
     - rakudo-moarvm
 
 github-pullrequest-check-count: 3
+github-max-source-retrieval-retries: 1
 
 sac-work-dir: work/sac-work
 sac-store-dir: work/sac-store
