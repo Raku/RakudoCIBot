@@ -35,12 +35,12 @@ class PRCommitTask {
     has $.user-url is required;
 }
 
+enum PRState <PR_OPEN PR_CLOSED>;
 class PRTask {
     has $.repo is required;
     has $.number is required;
     has $.title is required;
-    has $.body is required;
-    has $.state is required;
+    has PRState $.state is required;
     has $.git-url is required;
     has $.head-branch is required;
     has $.user-url is required;
@@ -75,7 +75,7 @@ method !process-pr-task(PRTask $pr) {
     if DB::GitHubPR.^all.grep({
                 $_.number eq $pr.number
             }).elems == 0
-            && $pr.state eq "OPEN" {
+            && $pr.state == PR_OPEN {
         # Unknown PR, add it!
         info "GitHub: Adding PR: " ~ $pr.number;
         my $db-pr = DB::GitHubPR.^create:

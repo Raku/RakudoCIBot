@@ -24,14 +24,25 @@ submethod TWEAK(:$app-id!, :$pem!) {
     ;
 }
 
+method !parse-pr-state($text) {
+    given $text {
+        when "open" | "OPEN"     { GitHubCITestRequester::PRState::PR_OPEN }
+        when "closed" | "CLOSED" { GitHubCITestRequester::PRState::PR_CLOSED }
+        default {
+            die "Unknown PRState found: " ~ $_;
+        }
+    }
+}
+
 method parse-hook-request($event, %json) {
     given $event {
+        # This event is only called for new commits, but not PRs.
         when 'check_suite' {
             if %json<action> eq 'requested' {
                 if %json<check_suite><pull_requests>.elems == 0 {
                     # Simple commit
                     info "GitHubInterface: Received PUSH request for " ~ %json<repository><name> ~ " " ~ %json<check_suite><head_sha>;
-                    $.processor.add-task: GitHubCITestRequester::CommitTask.new:
+                    $!processor.add-task: GitHubCITestRequester::CommitTask.new:
                         repo       => %json<repository><name>,
                         commit-sha => %json<check_suite><head_sha>,
                         user-url   => %json<repository><html_url> ~ "/commit/" ~ %json<check_suite><head_sha>,
@@ -41,35 +52,39 @@ method parse-hook-request($event, %json) {
                 }
             }
         }
-        #`[
+        # This event is called when PRs are created (action == opened) or changed (action == synchronize).
         when 'pull_request' {
-            if %json<action> eq 'opened' {
-                my $project = do given %json<pull_request><base><repo><full_name> {
-                    when 'rakudo/rakudo' { "rakudo" }
-                    when 'Raku/nqp'      { "nqp" }
-                    when "MoarVM/MoarVM" { "moarvm" }
-                };
-                $.processor.add-task: GitHubCITestRequester::PRTask.new:
-                    repo        => %json<pull_request><base><repo><owner><login>,
-                    number      => %json<pull_request><number>,
-                    title       => %json<pull_request><title>,
-                    body        => %json<pull_request><body>,
-                    state       => %json<pull_request><state>,
+            if %json<action> eq 'synchronize'|'opened' {
+                $!processor.add-task: GitHubCITestRequester::PRTask.new(
+                    repo        => %json<pull_request><base><repo><name>,
                     git-url     => %json<pull_request><head><repo><clone_url>,
                     head-branch => %json<pull_request><head><ref>,
-                    user-url    => %json<pull_request><url>,
+                    number      => %json<pull_request><number>,
+                    title       => %json<pull_request><title>,
+                    body        => %json<pull_request><body> // "",
+                    state       => self!parse-pr-state(%json<pull_request><state>),
+                    user-url    => %json<pull_request><html_url>,
+                    comments    => [GitHubCITestRequester::PRCommentTask.new(
+                        id         => %json<pull_request><node_id>,
+                        created-at => %json<pull_request><created_at>,
+                        updated-at => $%json<pull_request><updated_at>,
+                        pr-number  => %json<pull_request><number>,
+                        user-url   => %json<pull_request><html_url>,
+                        body       => %json<pull_request><body>,
+                    )],
                     commit-task => GitHubCITestRequester::PRCommitTask.new(
-                        repo       => %json<pull_request><base><repo><owner><login>,
+                        repo       => %json<pull_request><base><repo><name>,
                         pr-number  => %json<pull_request><number>,
                         commit-sha => %json<pull_request><head><sha>,
-                        user-url   => "https://github.com/patrickbkr/GitHub-API-Testing/pull/" ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
+                        user-url   => %json<pull_request><html_url> ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
                     ),
-                ;
+                );
             }
         }
+        #`[
         when 'issue_comment' {
             if %json<action> eq "created" && (%json<issue><pull_request>:exists) {
-                with $.processor { .new-pr-comment:
+                with $!processor { .new-pr-comment:
                     repo => %json<repository><full_name>,
                     pr-number => %json<issue><number>,
                     comment-id => %json<comment><id>,
@@ -87,7 +102,7 @@ method parse-hook-request($event, %json) {
 
             my $branch = $1;
 
-            with $.processor { .new-commit:
+            with $!processor { .new-commit:
                 repo => %json<repository><full_name>,
                 :$branch,
                 commit-sha => %json<head_commit><id>,
@@ -96,7 +111,7 @@ method parse-hook-request($event, %json) {
         }
         when 'commit_comment' {
             if %json<action> eq "created" {
-                with $.processor { .new-commit-comment:
+                with $!processor { .new-commit-comment:
                     repo => %json<repository><full_name>,
                     commit-sha => %json<comment><commit_id>,
                     comment-id => %json<comment><id>,
@@ -193,7 +208,10 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                   edges {
                     cursor
                     node {
+                      node_id
                       body
+                      createdAt
+                      lastEditedAt
                       state
                       title
                       number
@@ -234,9 +252,17 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                     number       => %pull-data<number>,
                     title        => %pull-data<title>,
                     body         => %pull-data<body>,
-                    state        => %pull-data<state>,
+                    state        => self!parse-pr-state(%pull-data<state>),
                     user-url     => %pull-data<url>,
-                    comments     => %pull-data<comments><nodes>.map({
+                    comments     => [
+                        GitHubCITestRequester::PRCommentTask.new(
+                            id         => %pull-data<node_id>,
+                            created-at => %pull-data<createdAt>,
+                            updated-at => %pull-data<lastEditedAt>,
+                            pr-number  => %pull-data<number>,
+                            user-url   => %pull-data<url>,
+                            body       => %pull-data<body>),
+                        |%pull-data<comments><nodes>.map({
                         GitHubCITestRequester::PRCommentTask.new:
                             id         => $_<id>,
                             created-at => $_<createdAt>,
@@ -244,7 +270,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                             pr-number  => %pull-data<number>,
                             user-url   => $_<url>,
                             body       => $_<body>,
-                    }),
+                    })],
                     commit-task  => GitHubCITestRequester::PRCommitTask.new(
                         :$repo,
                         pr-number => %pull-data<number>,
