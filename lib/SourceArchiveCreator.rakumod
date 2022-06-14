@@ -130,6 +130,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
         validate run qw|git remote add foobar|, $remote,
             :cwd($repo-dir), :merge;
 
+        #validate run qw|git fetch foobar|, |($.fetch-ref ?? ("+refs/" ~ $.fetch-ref ~ ":refs/remotes/" ~ $.fetch-ref,) !! ()),
         validate run qw|git fetch foobar|,
             :cwd($repo-dir), :merge;
 

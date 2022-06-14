@@ -172,7 +172,8 @@ model GitHubPR is rw is table<github_pr> {
     has DateTime      $.creation      is column .= now;
     has UInt          $.number        is column;
     has DB::Project   $.project       is column;
-    has Str           $.git-url       is column;
+    has Str           $.base-url      is column;
+    has Str           $.head-url      is column;
     has Str           $.head-branch   is column;
     has Str           $.user-url      is column;
     has DB::PRStatus  $.status        is column;

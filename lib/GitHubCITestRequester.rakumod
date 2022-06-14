@@ -41,7 +41,8 @@ class PRTask {
     has $.number is required;
     has $.title is required;
     has PRState $.state is required;
-    has $.git-url is required;
+    has $.base-url is required;
+    has $.head-url is required;
     has $.head-branch is required;
     has $.user-url is required;
     has PRCommentTask @.comments;
@@ -81,7 +82,8 @@ method !process-pr-task(PRTask $pr) {
         my $db-pr = DB::GitHubPR.^create:
             project      => self!repo-to-db-project($pr.repo),
             number       => $pr.number,
-            git-url      => $pr.git-url,
+            base-url      => $pr.base-url,
+            head-url      => $pr.head-url,
             head-branch  => $pr.head-branch,
             user-url     => $pr.user-url,
             status       => DB::OPEN,
@@ -117,7 +119,7 @@ method !process-pr-commit-task(PRCommitTask $commit) {
         DB::CITestSet.^create:
             event-type => DB::PR,
             project    => self!repo-to-db-project($commit.repo),
-            git-url    => $pr.git-url,
+            git-url    => $pr.head-url,
             commit-sha => $commit.commit-sha,
             user-url   => $commit.user-url,
             :$pr,
@@ -213,6 +215,7 @@ method process-worklist() is serial-dedup {
             project => $test-set.project,
             git-url => $test-set.git-url,
             commit-sha => $test-set.commit-sha,
+            # |($test-set.pr ?? (fetch-ref => "refs/pulls/" ~ $test-set.pr.number ~ "/head",) !! ()),
             );
         $!testset-manager.add-test-set(:$test-set, :$source-spec);
 
@@ -247,7 +250,21 @@ method process-worklist() is serial-dedup {
             };
         }
 
-        my %project-and-repo = self!github-url-to-project-repo($ts.git-url);
+        # Note, that in the PR case we are using the base url, i.e. the repo that the PR was opened on,
+        # NOT the head (the repo where the new commits are).
+        # Using the head repo will not work, as that's usually a different repo where the RCB is
+        # not installed on and thus has no permissons to add check_runs.
+        # One would think using the base repo can't work, because the commits are not part of that
+        # repository. But there is some almost completely undocumented behavior in GitHub that copies
+        # PR commits to the base repo and even creates merge commits (without the PR being merged!).
+        # Those commit objects are by default not copied to clients, so they are usually invisible.
+        # But they can actually be accessed when explicitly fetching the respective refs:
+        # - refs/pull/<pr_number>/head points at the head commit of the PR
+        # - refs/pull/<pr_number>/merge points at the merge commit of the PR
+        # See https://gist.github.com/piscisaureus/3342247
+        # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally
+        my %project-and-repo = self!github-url-to-project-repo($ts.pr ?? $ts.pr.base-url
+                                                                      !! $ts.git-url);
 
         if $test.status-pushed == DB::NOT_STARTED {
             trace "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status }, { $completed-at // "" } { $conclusion // "" }";
