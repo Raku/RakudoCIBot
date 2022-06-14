@@ -183,28 +183,12 @@ method poll-for-changes() is serial-dedup {
 }
 
 #`[
-method new-main-commit(:$git-url!, :$branch!, :$commit-sha!, :$user-url!) {
-    my $test-set = DB::CITestSet.^create:
-        event-type => DB::MAIN_BRANCH,
-        project    => self!url-to-project($git-url),
-        :$git-url,
-        commit-sha => '0123456789012345678901234567890123456789';
-    self.process-worklist;
-}
-
 method new-commit-comment(:$repo, :$commit-sha, :$comment-id, :$comment-text, :$user-url) {
 
 }
 
 method new-retest-command(:$project, :$pr-number, :$comment-id, :$user-url) {
 
-}
-
-method !url-to-project($url) {
-    return DB::RAKUDO if $url eq 'https://github.com/rakudo/rakudo.git';
-    return DB::MOAR   if $url eq 'https://github.com/MoarVM/MoarVM.git';
-    return DB::NQP if $url eq 'https://github.com/Raku/nqp.git';
-    die "Unknown URL $url seen";
 }
 ]
 
