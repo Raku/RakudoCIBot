@@ -23,6 +23,7 @@ class PRCommentTask {
     has $.id is required;
     has $.created-at is required;
     has $.updated-at is required;
+    has $.pr-repo is required;
     has $.pr-number is required;
     has $.user-url is required;
     has $.body is required;
@@ -73,8 +74,10 @@ method add-task($task) {
 
 method !process-pr-task(PRTask $pr) {
     # Check if it's new
+    my $project = self!repo-to-db-project($pr.repo);
     if DB::GitHubPR.^all.grep({
-                $_.number eq $pr.number
+                $_.project == $project &&
+                $_.number == $pr.number
             }).elems == 0
             && $pr.state == PR_OPEN {
         # Unknown PR, add it!
@@ -82,8 +85,8 @@ method !process-pr-task(PRTask $pr) {
         my $db-pr = DB::GitHubPR.^create:
             project      => self!repo-to-db-project($pr.repo),
             number       => $pr.number,
-            base-url      => $pr.base-url,
-            head-url      => $pr.head-url,
+            base-url     => $pr.base-url,
+            head-url     => $pr.head-url,
             head-branch  => $pr.head-branch,
             user-url     => $pr.user-url,
             status       => DB::OPEN,
@@ -94,31 +97,25 @@ method !process-pr-task(PRTask $pr) {
     self!process-pr-comment-task($_) for $pr.comments;
 }
 
-method !repo-to-db-project($project) {
-    $project eq "rakudo"    ?? DB::RAKUDO
-    !! $project eq "nqp"    ?? DB::NQP
-    !! $project eq "MoarVM" ?? DB::MOAR
-    !! die "unknown project";
-}
-
 method !process-pr-commit-task(PRCommitTask $commit) {
+    my $project = self!repo-to-db-project($commit.repo);
     my $pr = DB::GitHubPR.^all.first({
                 $_.number == $commit.pr-number
-                && $_.project == self!repo-to-db-project($commit.repo)
+                && $_.project == $project
             });
     return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
 
     my $ts = DB::CITestSet.^all.first({
             $_.event-type == DB::PR
             && $_.pr.number == $commit.pr-number
-            && $_.project == self!repo-to-db-project($commit.repo)
+            && $_.project == $project
             && $_.commit-sha eq $commit.commit-sha
     });
     without $ts {
         info "GitHub: Adding PR commit: " ~ $commit.commit-sha;
         DB::CITestSet.^create:
             event-type => DB::PR,
-            project    => self!repo-to-db-project($commit.repo),
+            :$project,
             git-url    => $pr.head-url,
             commit-sha => $commit.commit-sha,
             user-url   => $commit.user-url,
@@ -129,8 +126,46 @@ method !process-pr-commit-task(PRCommitTask $commit) {
 }
 
 method !process-pr-comment-task(PRCommentTask $comment) {
-    # TODO
-    info "Adding PR comment: " ~ $comment.created-at;
+    Bool $need-to-process = False;
+    for $comment.body ~~ m:g:i/ '{' \s* 'rcb:' \s* ( <[ \w - ]>+ ) \s* '}' / -> $m {
+        my $command-text = $m[0];
+        my $command = self!command-to-enum($command-text);
+        my $proj-repo = self!repo-to-project-repo($comment.pr-repo);
+
+        my $pr = DB::GitHubPR.^all.first({
+                    $_.number == $comment.pr-number
+                    && $_.project == $proj-repo<db-project>
+                });
+        return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
+
+        if $command {
+            return with DB::Command.^all.first({
+                $_.comment-id eq $comment.id &&
+                $_.pr.id == $pr.id &&
+                $_.command == $command
+            });
+
+            info "Adding PR comment: " ~ $comment.created-at;
+
+            DB::Command.^create:
+                :$pr,
+                comment-id => $comment.id,
+                comment-url => $comment.user-url,
+                :$command,
+                status => DB::COMMAND_NEW,
+            ;
+            need-to-process = True;
+        }
+        else {
+            $!github-interface.add-issue-comment:
+                owner  => $proj-repo<project>,
+                repo   => $proj-repo<repo>,
+                number => $comment.pr-number,
+                body   => "I didn't understand the command `" ~ $command-text ~ "`.";
+        }
+
+        self.process-worklist if $need-to-process;
+    }
 }
 
 method !process-commit-task(CommitTask $commit) {
@@ -181,16 +216,6 @@ method poll-for-changes() is serial-dedup {
         }
     }
 }
-
-#`[
-method new-commit-comment(:$repo, :$commit-sha, :$comment-id, :$comment-text, :$user-url) {
-
-}
-
-method new-retest-command(:$project, :$pr-number, :$comment-id, :$user-url) {
-
-}
-]
 
 method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
@@ -315,6 +340,34 @@ method !github-url-to-project-repo($url) {
         }
     }
     die "GitHub URL couldn't be parsed: $url";
+}
+
+method !command-to-enum($text is copy) {
+    $text .= lc;
+    given $text {
+        when "merge-on-success" | "mos" {
+            DB::MERGE_ON_SUCCESS
+        }
+        when "re-test" | "rt" {
+            DB::RE_TEST
+        }
+        default {
+            Nil
+        }
+    }
+}
+
+method !repo-to-project-repo($repo) {
+    given $repo.lc {
+        when "rakudo" { { project => config.projects.rakudo.project, repo => config.projects.rakudo.repo, db-project => DB::RAKUDO } }
+        when "nqp" { { project => config.projects.nqp.project, repo => config.projects.nqp.repo, db-project => DB::NQP } }
+        when "moarvm" { { project => config.projects.moar.project, repo => config.projects.moar.repo, db-project => DB::MOAR } }
+        default       { die "unknown project"; }
+    }
+}
+
+method !repo-to-db-project($repo) {
+    self!repo-to-project-repo($repo)<db-project>;
 }
 
 method tests-queued(@tests) {

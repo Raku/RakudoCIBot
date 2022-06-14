@@ -190,10 +190,10 @@ model Command is rw is table<command> {
     has DateTime          $.creation       is column .= now;
 
     # If triggered via a GitHub PR
-    has UInt              $!fk-pr          is referencing( *.id, :model(DB::GitHubPR) );
-    has DB::GitHubPR      $.pr             is relationship( *.fk-pr );
-    has Str               $.comment-number is column;
-    has Str               $.comment-url    is column;
+    has UInt              $!fk-pr       is referencing( *.id, :model(DB::GitHubPR) );
+    has DB::GitHubPR      $.pr          is relationship( *.fk-pr );
+    has Str               $.comment-id  is column;
+    has Str               $.comment-url is column;
 
     # If triggered via the Website the test set on whose web page the command was issued.
     has UInt              $!fk-origin-test-set     is referencing( *.id, :model(DB::CITestSet) );

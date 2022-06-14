@@ -57,8 +57,8 @@ method parse-hook-request($event, %json) {
             if %json<action> eq 'synchronize'|'opened' {
                 $!processor.add-task: GitHubCITestRequester::PRTask.new(
                     repo        => %json<pull_request><base><repo><name>,
-                    head-url     => %json<pull_request><head><repo><clone_url>,
-                    base-url     => %json<pull_request><base><repo><clone_url>,
+                    head-url    => %json<pull_request><head><repo><clone_url>,
+                    base-url    => %json<pull_request><base><repo><clone_url>,
                     head-branch => %json<pull_request><head><ref>,
                     number      => %json<pull_request><number>,
                     title       => %json<pull_request><title>,
@@ -69,6 +69,7 @@ method parse-hook-request($event, %json) {
                         id         => %json<pull_request><node_id>,
                         created-at => %json<pull_request><created_at>,
                         updated-at => $%json<pull_request><updated_at>,
+                        pr-repo    => %json<pull_request><base><repo><name>,
                         pr-number  => %json<pull_request><number>,
                         user-url   => %json<pull_request><html_url>,
                         body       => %json<pull_request><body>,
@@ -79,6 +80,19 @@ method parse-hook-request($event, %json) {
                         commit-sha => %json<pull_request><head><sha>,
                         user-url   => %json<pull_request><html_url> ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
                     ),
+                );
+            }
+        }
+        when 'issue_comment' {
+            if %json<action> eq 'created' && %json<issue><pull_request> && %json<comment><user><type> ne "Bot" {
+                $!processor.add-task: GitHubCITestRequester::PRCommentTask.new(
+                    id         => %json<comment><node_id>,
+                    created-at => %json<comment><created_at>,
+                    updated-at => %json<comment><updated_at>,
+                    pr-repo    => %json<repository><name>,
+                    pr-number  => %json<issue><number>,
+                    user-url   => %json<comment><html_url>,
+                    body       => %json<comment><body>,
                 );
             }
         }
@@ -234,11 +248,15 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                       }
                       comments(last: 100) {
                         nodes {
+                          id
                           body
                           createdAt
                           id
                           updatedAt
                           url
+                          author {
+                              __typename
+                          }
                         }
                       }
                     }
@@ -267,15 +285,17 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                             pr-number  => %pull-data<number>,
                             user-url   => %pull-data<url>,
                             body       => %pull-data<body>),
-                        |%pull-data<comments><nodes>.map({
-                        GitHubCITestRequester::PRCommentTask.new:
-                            id         => $_<id>,
-                            created-at => $_<createdAt>,
-                            updated-at => $_<updatedAt>,
-                            pr-number  => %pull-data<number>,
-                            user-url   => $_<url>,
-                            body       => $_<body>,
-                    })],
+                        |%pull-data<comments><nodes>.grep({ $_<author><__typename> ne "Bot" }).map({
+                            GitHubCITestRequester::PRCommentTask.new:
+                                id         => $_<id>,
+                                created-at => $_<createdAt>,
+                                updated-at => $_<updatedAt>,
+                                pr-repo    => $repo,
+                                pr-number  => %pull-data<number>,
+                                user-url   => $_<url>,
+                                body       => $_<body>,
+                        })
+                    ],
                     commit-task  => GitHubCITestRequester::PRCommitTask.new(
                         :$repo,
                         pr-number => %pull-data<number>,
@@ -310,4 +330,8 @@ method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, Dat
         |($completed-at ?? completed-at => $completed-at.Str !! {}),
         :$conclusion
     ).data
+}
+
+method add-issue-comment(:$owner!, :$repo!, :$number!, :$body) {
+    $!gh.issues-comments.create-comment($owner, $repo, $number, :$body).data;
 }
