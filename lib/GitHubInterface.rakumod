@@ -72,6 +72,7 @@ method parse-hook-request($event, %json) {
                         pr-repo    => %json<pull_request><base><repo><name>,
                         pr-number  => %json<pull_request><number>,
                         user-url   => %json<pull_request><html_url>,
+                        author     => %json<pull_request><user><login>;
                         body       => %json<pull_request><body>,
                     )],
                     commit-task => GitHubCITestRequester::PRCommitTask.new(
@@ -92,6 +93,7 @@ method parse-hook-request($event, %json) {
                     pr-repo    => %json<repository><name>,
                     pr-number  => %json<issue><number>,
                     user-url   => %json<comment><html_url>,
+                    author     => %json<comment><user><login>;
                     body       => %json<comment><body>,
                 );
             }
@@ -224,6 +226,9 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                     cursor
                     node {
                       node_id
+                      author {
+                        login
+                      }
                       body
                       createdAt
                       lastEditedAt
@@ -255,6 +260,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                           updatedAt
                           url
                           author {
+                              login
                               __typename
                           }
                         }
@@ -284,6 +290,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                             updated-at => %pull-data<lastEditedAt>,
                             pr-number  => %pull-data<number>,
                             user-url   => %pull-data<url>,
+                            author     => %pull-data<author><login>,
                             body       => %pull-data<body>),
                         |%pull-data<comments><nodes>.grep({ $_<author><__typename> ne "Bot" }).map({
                             GitHubCITestRequester::PRCommentTask.new:
@@ -293,6 +300,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                                 pr-repo    => $repo,
                                 pr-number  => %pull-data<number>,
                                 user-url   => $_<url>,
+                                author     => $_<author><login>,
                                 body       => $_<body>,
                         })
                     ],
@@ -334,4 +342,13 @@ method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, Dat
 
 method add-issue-comment(:$owner!, :$repo!, :$number!, :$body) {
     $!gh.issues-comments.create-comment($owner, $repo, $number, :$body).data;
+}
+
+method merge-pr(:$owner!, :$repo!, :$number!, :$sha) {
+    $!gh.pulls.merge($owner, $repo, $number, |($sha ?? :$sha !! ())).data;
+}
+
+method can-user-merge-repo(Str :$owner!, Str :$repo!, Str :$username! --> Bool) {
+    my %data = $!gh.repos-collaborators.get-collaborator-permission-level($owner, $repo, $username).data;
+    return %data<permission> ~~ ("admin" | "write");
 }

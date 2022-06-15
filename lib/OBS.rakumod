@@ -26,6 +26,7 @@ method new-test-set(DB::CITestSet $test-set) {
 }
 
 method process-worklist() is serial-dedup {
+    trace "OBS: Processing worklist";
     my @running-ptses = DB::CIPlatformTestSet.^all.grep({
         $_.platform == DB::OBS &&
         $_.status == DB::PLATFORM_IN_PROGRESS &&
@@ -40,7 +41,6 @@ method process-worklist() is serial-dedup {
     }
     elsif @running-ptses.elems == 0 {
         # No in progress test set found. Let's see if we can start a new one.
-        trace "OBS: Nothing in progress. Looking if there is a new test set to start.";
         with DB::CIPlatformTestSet.^all.first({
                 $_.platform == DB::OBS &&
                 $_.status == DB::PLATFORM_IN_PROGRESS &&

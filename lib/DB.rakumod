@@ -105,6 +105,7 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
 model CITestSet is rw is table<citest_set> {
     has UInt                      $.id                       is serial;
     has DateTime                  $.creation                 is column .= now;
+    has DateTime                  $.finished-at              is column;
 
     # Responsibility of the GitHubCITestRequester
         has DB::GitHubEventType   $.event-type               is column;
@@ -186,22 +187,23 @@ model GitHubPR is rw is table<github_pr> {
     website.
   ]
 model Command is rw is table<command> {
-    has UInt              $.id             is serial;
-    has DateTime          $.creation       is column .= now;
+    has UInt              $.id       is serial;
+    has DateTime          $.creation is column .= now;
 
     # If triggered via a GitHub PR
-    has UInt              $!fk-pr       is referencing( *.id, :model(DB::GitHubPR) );
-    has DB::GitHubPR      $.pr          is relationship( *.fk-pr );
-    has Str               $.comment-id  is column;
-    has Str               $.comment-url is column;
+    has UInt              $!fk-pr          is referencing( *.id, :model(DB::GitHubPR) );
+    has DB::GitHubPR      $.pr             is relationship( *.fk-pr );
+    has Str               $.comment-author is column;
+    has Str               $.comment-id     is column;
+    has Str               $.comment-url    is column;
 
     # If triggered via the Website the test set on whose web page the command was issued.
-    # If triggered via a PR comment, the test set that we ended up duplicating.
-    has UInt              $!fk-origin-test-set     is referencing( *.id, :model(DB::CITestSet) );
-    has DB::CITestSet     $.origin-test-set is relationship( *.fk-origin-test-set );
+    # If triggered via a PR comment, the test set that we ended up duplicating (re-test).
+    has UInt              $!fk-origin-test-set is referencing( *.id, :model(DB::CITestSet) );
+    has DB::CITestSet     $.origin-test-set    is relationship( *.fk-origin-test-set );
 
-    has DB::CommandEnum   $.command        is column;
-    has DB::CommandStatus $.status         is column;
+    has DB::CommandEnum   $.command is column;
+    has DB::CommandStatus $.status  is column;
 
     # Should only ever be one.
     has DB::CITestSet     @.test-sets  is relationship( *.fk-command );

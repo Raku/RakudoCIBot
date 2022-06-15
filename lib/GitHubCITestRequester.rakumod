@@ -26,6 +26,7 @@ class PRCommentTask {
     has $.pr-repo is required;
     has $.pr-number is required;
     has $.user-url is required;
+    has $.author is required;
     has $.body is required;
 }
 
@@ -149,11 +150,19 @@ method !process-pr-comment-task(PRCommentTask $comment) {
 
             DB::Command.^create:
                 :$pr,
+                comment-author => $comment.author,
                 comment-id => $comment.id,
                 comment-url => $comment.user-url,
                 :$command,
                 status => DB::COMMAND_NEW,
             ;
+            if $command == DB::MERGE_ON_SUCCESS {
+                $!github-interface.add-issue-comment:
+                    owner  => $proj-repo<project>,
+                    repo   => $proj-repo<repo>,
+                    number => $comment.pr-number,
+                    body   => "@" ~ $comment.author ~ " OK. I'll merge this PR if it tests successfully.";
+            }
             $need-to-process = True;
         }
         else {
@@ -161,7 +170,7 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                 owner  => $proj-repo<project>,
                 repo   => $proj-repo<repo>,
                 number => $comment.pr-number,
-                body   => "I didn't understand the command `" ~ $command-text ~ "`.";
+                body   => "@" ~ $comment.author ~ " I didn't understand the command `" ~ $command-text ~ "`.";
         }
     }
     $!testset-manager.process-worklist if $need-to-process;
@@ -217,6 +226,7 @@ method poll-for-changes() is serial-dedup {
 }
 
 method process-worklist() is serial-dedup {
+    trace "GitHub: Processing worklist";
     for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
         trace "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
@@ -271,7 +281,7 @@ method process-worklist() is serial-dedup {
         # - refs/pull/<pr_number>/merge points at the merge commit of the PR
         # See https://gist.github.com/piscisaureus/3342247
         # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally
-        my $pr = self!get-pr($ts);
+        my $pr = $ts.pr;
         my %project-and-repo = self!github-url-to-project-repo($pr ?? $pr.base-url
                                                                       !! $ts.git-url);
 
@@ -310,15 +320,8 @@ method process-worklist() is serial-dedup {
             }
         }
     }
-}
 
-method !get-pr($ts) {
-    return $_ with $ts.pr;
-    with $ts.command {
-        return $_ with $ts.command.pr;
-        return self!get-pr($_) with $ts.command.origin-test-set;
-    }
-    return Nil;
+    self!process-merge-on-success();
 }
 
 method !determine-source-spec(:$project!, :$git-url!, :$commit-sha! --> SourceSpec) {
@@ -401,6 +404,83 @@ method test-set-done($test-set) {
     # So we don't need to tell GitHub, that we are done.
     # So there is nothing to do here.
     trace "GitHub: TestSet done: " ~ $test-set.id;
+    # Run process-worklist to possibly merge PRs if a
+    # merge-on-success is present.
+    self.process-worklist;
+}
+
+method !process-merge-on-success() {
+    CATCH {
+        default {
+            error "GitHub: Failure processing merge-on-success commands: " ~ .message ~ .backtrace.Str
+        }
+    }
+
+    my @merge-commands = DB::Command.^all.grep({
+            $_.status == DB::COMMAND_NEW &&
+            $_.command == DB::MERGE_ON_SUCCESS &&
+            $_.pr
+    }).Seq;
+
+    for @merge-commands.categorize(*.pr.number).kv -> $pr-num, @pr-mcs {
+        my $pr = @pr-mcs[0].pr;
+        my @test-sets = DB::CITestSet.^all.grep(*.pr.number == $pr.number).sort(-*.finished-at).Seq;
+        my $test-set = @test-sets[0];
+        if @test-sets && !@test-sets.first(!*.finished-at.defined) {
+            # No unfinished tests
+            my $proj-repo = self!db-project-to-project-repo($pr.project);
+
+            if [&&] $test-set.platform-test-sets.Seq.map({
+                    $_.tests.Seq.map(*.status == DB::SUCCESS)
+            }) {
+                trace "GitHub: Doing Merge-on-success for PR: " ~ $pr.number;
+
+                my $allowed = False;
+                for @pr-mcs {
+                    if $!github-interface.can-user-merge-repo(
+                            owner  => $proj-repo<project>,
+                            repo   => $proj-repo<repo>,
+                            username => $_.comment-author) {
+                        $allowed = $_.comment-author;
+                    }
+                }
+
+                if $allowed {
+                    $!github-interface.merge-pr(
+                        owner  => $proj-repo<project>,
+                        repo   => $proj-repo<repo>,
+                        number => $pr.number,
+                        sha    => $test-set.commit-sha,
+                    );
+                    $!github-interface.add-issue-comment:
+                        owner  => $proj-repo<project>,
+                        repo   => $proj-repo<repo>,
+                        number => $pr.number,
+                        body   => "Merged PR based on `merge-on-success` request by @" ~ $allowed ~ ".";
+                }
+                else {
+                    my $forbidden = @pr-mcs.map("@" ~ *.comment-author).join(", ");
+                    $!github-interface.add-issue-comment:
+                        owner  => $proj-repo<project>,
+                        repo   => $proj-repo<repo>,
+                        number => $pr.number,
+                        body   => "I won't merge the PR based on `merge-on-success` request by " ~ $forbidden ~ ". Missing write permissions.";
+                }
+                for @pr-mcs {
+                    $_.status = DB::COMMAND_DONE;
+                    $_.^save;
+                }
+            }
+            else {
+                $!github-interface.add-issue-comment:
+                    owner  => $proj-repo<project>,
+                    repo   => $proj-repo<repo>,
+                    number => $pr.number,
+                    body   => "A merge-on-success was requested by @" ~ @pr-mcs[0].comment-author ~ ", but the tests failed. Re-request to merge on success" ~
+                            " to try again on the next test run.";
+            }
+        }
+    }
 }
 
 method command-accepted($command) {
@@ -410,7 +490,6 @@ method command-accepted($command) {
         owner  => $proj-repo<project>,
         repo   => $proj-repo<repo>,
         number => $command.pr.number,
-        body   => ($command.command == DB::RE_TEST ?? "Re-testing of this PR started." !!
-                   $command.command == DB::MERGE_ON_SUCCESS ?? "I'll merge this PR, should it succeeed." !!
+        body   => ($command.command == DB::RE_TEST ?? "@" ~ $command.comment-author ~ " Re-testing of this PR started." !!
                    "What? I confused myself!");
 }

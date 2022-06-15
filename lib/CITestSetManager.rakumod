@@ -22,6 +22,7 @@ method register-test-set-listener($test-set-listener) {
 }
 
 method process-worklist() is serial-dedup {
+    trace "CITestSetManager: Processing worklist";
     for DB::Command.^all.grep(*.status == DB::COMMAND_NEW) -> $command {
         given $command.command {
             when DB::RE_TEST {
@@ -45,6 +46,7 @@ method process-worklist() is serial-dedup {
                         git-url => $ts.git-url,
                         commit-sha => $ts.commit-sha,
                         user-url => $ts.user-url,
+                        |($ts.pr ?? (pr => $ts.pr,) !! ()),
                         command => $command,
                         source-archive-id => $ts.source-archive-id,
                     ;
@@ -56,9 +58,6 @@ method process-worklist() is serial-dedup {
 
                     $_.command-accepted($command) for $!status-listeners.keys;
                 }
-            }
-            when DB::MERGE_ON_SUCCESS {
-
             }
         }
     }
@@ -126,9 +125,10 @@ method test-status-updated($test) {
 method platform-test-set-done($platform-test-set) {
     my $test-set = $platform-test-set.test-set;
     if [&&] $test-set.platform-test-sets.map(*.status == DB::PLATFORM_DONE) {
-        $_.test-set-done($test-set) for $!status-listeners.keys;
+        $test-set.finished-at = now;
         $test-set.status = DB::DONE;
         $test-set.^save;
+        $_.test-set-done($test-set) for $!status-listeners.keys;
     }
 }
 
