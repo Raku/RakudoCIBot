@@ -196,6 +196,7 @@ model Command is rw is table<command> {
     has Str               $.comment-url is column;
 
     # If triggered via the Website the test set on whose web page the command was issued.
+    # If triggered via a PR comment, the test set that we ended up duplicating.
     has UInt              $!fk-origin-test-set     is referencing( *.id, :model(DB::CITestSet) );
     has DB::CITestSet     $.origin-test-set is relationship( *.fk-origin-test-set );
 

@@ -22,6 +22,47 @@ method register-test-set-listener($test-set-listener) {
 }
 
 method process-worklist() is serial-dedup {
+    for DB::Command.^all.grep(*.status == DB::COMMAND_NEW) -> $command {
+        given $command.command {
+            when DB::RE_TEST {
+                if $command.pr {
+                    my $ts = DB::CITestSet.^all.sort(-*.id).first( *.pr.number == $command.pr.number );
+                    unless $ts {
+                        error "No PR for the given command found: " ~ $command.id;
+                        $command.status = DB::COMMAND_DONE;
+                        $command.^save;
+                        next;
+                    }
+
+                    $command.origin-test-set = $ts;
+                    $command.^save;
+
+                    trace "CITestSetManager: Adding re-test test set for command: " ~ $command.id;
+                    my $re-ts = DB::CITestSet.new:
+                        status => DB::UNPROCESSED,
+                        event-type => DB::COMMAND,
+                        project => $ts.project,
+                        git-url => $ts.git-url,
+                        commit-sha => $ts.commit-sha,
+                        user-url => $ts.user-url,
+                        command => $command,
+                        source-archive-id => $ts.source-archive-id,
+                    ;
+                    $re-ts.source-spec($ts.source-spec);
+                    $re-ts.^save;
+
+                    $command.status = DB::COMMAND_DONE;
+                    $command.^save;
+
+                    $_.command-accepted($command) for $!status-listeners.keys;
+                }
+            }
+            when DB::MERGE_ON_SUCCESS {
+
+            }
+        }
+    }
+
     for DB::CITestSet.^all.grep(
       *.status ⊂ (DB::UNPROCESSED, DB::SOURCE_ARCHIVE_CREATED, DB::WAITING_FOR_TEST_RESULTS))
       -> $test-set {
@@ -62,7 +103,7 @@ method process-worklist() is serial-dedup {
 
     CATCH {
         default {
-            error "Failed starting OBS run: " ~ .message ~ .backtrace.Str
+            error "Failed processing CITestSetManagers worklist: " ~ .message ~ .backtrace.Str
         }
     }
 }

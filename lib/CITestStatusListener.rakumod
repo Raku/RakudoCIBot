@@ -12,3 +12,6 @@ method test-set-done($test-set) {
     ...
 }
 
+method command-accepted($command) {
+    ...
+}

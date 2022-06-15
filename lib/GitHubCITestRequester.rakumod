@@ -126,7 +126,7 @@ method !process-pr-commit-task(PRCommitTask $commit) {
 }
 
 method !process-pr-comment-task(PRCommentTask $comment) {
-    Bool $need-to-process = False;
+    my Bool $need-to-process = False;
     for $comment.body ~~ m:g:i/ '{' \s* 'rcb:' \s* ( <[ \w - ]>+ ) \s* '}' / -> $m {
         my $command-text = $m[0];
         my $command = self!command-to-enum($command-text);
@@ -138,7 +138,7 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                 });
         return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
 
-        if $command {
+        with $command {
             return with DB::Command.^all.first({
                 $_.comment-id eq $comment.id &&
                 $_.pr.id == $pr.id &&
@@ -154,7 +154,7 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                 :$command,
                 status => DB::COMMAND_NEW,
             ;
-            need-to-process = True;
+            $need-to-process = True;
         }
         else {
             $!github-interface.add-issue-comment:
@@ -163,9 +163,8 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                 number => $comment.pr-number,
                 body   => "I didn't understand the command `" ~ $command-text ~ "`.";
         }
-
-        self.process-worklist if $need-to-process;
     }
+    $!testset-manager.process-worklist if $need-to-process;
 }
 
 method !process-commit-task(CommitTask $commit) {
@@ -272,7 +271,8 @@ method process-worklist() is serial-dedup {
         # - refs/pull/<pr_number>/merge points at the merge commit of the PR
         # See https://gist.github.com/piscisaureus/3342247
         # See https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally
-        my %project-and-repo = self!github-url-to-project-repo($ts.pr ?? $ts.pr.base-url
+        my $pr = self!get-pr($ts);
+        my %project-and-repo = self!github-url-to-project-repo($pr ?? $pr.base-url
                                                                       !! $ts.git-url);
 
         if $test.status-pushed == DB::NOT_STARTED {
@@ -310,6 +310,15 @@ method process-worklist() is serial-dedup {
             }
         }
     }
+}
+
+method !get-pr($ts) {
+    return $_ with $ts.pr;
+    with $ts.command {
+        return $_ with $ts.command.pr;
+        return self!get-pr($_) with $ts.command.origin-test-set;
+    }
+    return Nil;
 }
 
 method !determine-source-spec(:$project!, :$git-url!, :$commit-sha! --> SourceSpec) {
@@ -366,6 +375,15 @@ method !repo-to-project-repo($repo) {
     }
 }
 
+method !db-project-to-project-repo($db-project) {
+    my $repo = do given $db-project {
+        when DB::RAKUDO { "rakudo" }
+        when DB::NQP { "nqp" }
+        when DB::MOAR { "moarvm" }
+    }
+    self!repo-to-project-repo($repo);
+}
+
 method !repo-to-db-project($repo) {
     self!repo-to-project-repo($repo)<db-project>;
 }
@@ -383,4 +401,16 @@ method test-set-done($test-set) {
     # So we don't need to tell GitHub, that we are done.
     # So there is nothing to do here.
     trace "GitHub: TestSet done: " ~ $test-set.id;
+}
+
+method command-accepted($command) {
+    my $proj-repo = self!db-project-to-project-repo($command.pr.project);
+
+    $!github-interface.add-issue-comment:
+        owner  => $proj-repo<project>,
+        repo   => $proj-repo<repo>,
+        number => $command.pr.number,
+        body   => ($command.command == DB::RE_TEST ?? "Re-testing of this PR started." !!
+                   $command.command == DB::MERGE_ON_SUCCESS ?? "I'll merge this PR, should it succeeed." !!
+                   "What? I confused myself!");
 }
