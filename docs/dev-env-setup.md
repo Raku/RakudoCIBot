@@ -25,7 +25,16 @@ Create a GitHub App
 
 To be able to receive push notifications from GitHub you need to set up a GitHub App. To do so open the settings of your GitHub account (dropdown menu at the top left), then "Settings", then select "Developer Settings" in the left menu. There make sure you have "GitHub Apps" selected at the left and then click the "New GitHub App" button at the top right. Give it a name and make sure the Webhooks "Active" tickbox is selected. For the following permissions select "Access: read & write":
 
-- ...
+- RW Issues: To comment in PRs
+- RW Pull Requests: To merge PRs
+- RW Check Runs: To add test runs
+- R Members: To check whether a user can merge a PR (So RCB doesn't merge a PR on request of a user that's not allowed to do so.)
+
+Select the following events to subscribe to:
+
+- Check suite: To be notified when a new test run should be done
+- Issue comment: To be notified of PR comments which might contain RCB commands
+- Pull Request: To be notified about new PRs to start a test run (PRs don't trigger Check suite events.)
 
 Verify that "Only on this account" the App can be installed, as it's only used for development.
 
