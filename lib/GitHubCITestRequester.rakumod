@@ -8,6 +8,7 @@ use SourceArchiveCreator;
 use CITestSetManager;
 use Config;
 
+constant $gh-url-base = "https://github.com/";
 
 unit class GitHubCITestRequester does CITestStatusListener;
 
@@ -230,10 +231,10 @@ method process-worklist() is serial-dedup {
     for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
         trace "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
+            pr => $test-set.pr,
             project => $test-set.project,
             git-url => $test-set.git-url,
             commit-sha => $test-set.commit-sha,
-            # |($test-set.pr ?? (fetch-ref => "refs/pulls/" ~ $test-set.pr.number ~ "/head",) !! ()),
             );
         $!testset-manager.add-test-set(:$test-set, :$source-spec);
 
@@ -324,34 +325,97 @@ method process-worklist() is serial-dedup {
     self!process-merge-on-success();
 }
 
-method !determine-source-spec(:$project!, :$git-url!, :$commit-sha! --> SourceSpec) {
-    given $project {
-        when DB::RAKUDO {
-            return SourceSpec.new:
-                rakudo-git-url => $git-url,
-                rakudo-commit-sha => $commit-sha;
+method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> SourceSpec) {
+    my ($rakudo-git-url, $nqp-git-url, $moar-git-url,
+        $rakudo-commit-sha, $nqp-commit-sha, $moar-commit-sha);
+    my $did-things = False;
+    with $pr {
+        my %head-data = self!github-url-to-project-repo($pr.head-url);
+        if $project == DB::RAKUDO    && %head-data<repo>.lc eq config.projects.rakudo.repo ||
+                $project == DB::NQP  && %head-data<repo>.lc eq config.projects.nqp.repo ||
+                $project == DB::MOAR && %head-data<repo>.lc eq config.projects.moar.repo {
+            my $uses-core-repos = %head-data<slug> eq ($project == DB::RAKUDO ?? config.projects.rakudo.slug !!
+                                                       $project == DB::NQP    ?? config.projects.nqp.slug !!
+                                                       $project == DB::MOAR   ?? config.projects.moar.slug !!
+                                                       "should never happen");
+            my ($r-proj, $r-repo, $n-proj, $n-repo, $m-proj, $m-repo) = do if $uses-core-repos {
+                config.projects.rakudo.project, config.projects.rakudo.repo,
+                config.projects.nqp.project,    config.projects.nqp.repo,
+                config.projects.moar.project,   config.projects.moar.repo,
+            }
+            else {
+                %head-data<project>,            config.projects.rakudo.repo,
+                %head-data<project>,            config.projects.nqp.repo,
+                %head-data<project>,            config.projects.moar.repo
+            }
+
+            my $branch = $pr.head-branch;
+
+            for DB::RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $r-proj, $r-repo,
+                    DB::NQP, $nqp-git-url, $nqp-commit-sha, $n-proj, $n-repo,
+                    DB::MOAR, $moar-git-url, $moar-commit-sha, $m-proj, $m-repo
+            -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $project, $repo {
+                if $cur-proj == $project {
+                    $out-url = $git-url;
+                    $out-commit-sha = $commit-sha;
+                }
+                else {
+                    my $branch-data = $!github-interface.get-branch($project, $repo, $branch);
+                    with $branch-data {
+                        $out-url = self!make-github-url($project, $repo);
+                        $out-commit-sha = $branch-data<commit><sha>;
+                    }
+                    else {
+                        $out-url = Nil;
+                        $out-commit-sha = Nil;
+                    }
+                }
+            }
+            $did-things = True;
         }
-        when DB::NQP {
-            return SourceSpec.new:
-                nqp-git-url => $git-url,
-                nqp-commit-sha => $commit-sha;
-        }
-        when DB::MOAR {
-            return SourceSpec.new:
-                moar-git-url => $git-url,
-                moar-commit-sha => $commit-sha;
+        else {
+            trace "PR repo doesn't match nomenclature. Won't try branch matching. Slug: " ~ %head-data<slug>;
         }
     }
+    if !$did-things {
+        given $project {
+            when DB::RAKUDO {
+                $rakudo-git-url = $git-url;
+                $rakudo-commit-sha = $commit-sha;
+            }
+            when DB::NQP {
+                $nqp-git-url = $git-url;
+                $nqp-commit-sha = $commit-sha;
+            }
+            when DB::MOAR {
+                $moar-git-url = $git-url;
+                $moar-commit-sha = $commit-sha;
+            }
+        }
+    }
+
+    return SourceSpec.new:
+        |($rakudo-git-url    ?? :$rakudo-git-url    !! ()),
+        |($rakudo-commit-sha ?? :$rakudo-commit-sha !! ()),
+        |($nqp-git-url       ?? :$nqp-git-url       !! ()),
+        |($nqp-commit-sha    ?? :$nqp-commit-sha    !! ()),
+        |($moar-git-url      ?? :$moar-git-url      !! ()),
+        |($moar-commit-sha   ?? :$moar-commit-sha   !! ()),
 }
 
 method !github-url-to-project-repo($url) {
-    if $url ~~ / 'https://github.com/' $<project>=( <-[ / ]>+ ) '/' $<repo>=( <-[ . ]>+ ) '.git' / {
+    if $url ~~ / ^ $gh-url-base $<project>=( <-[ / ]>+ ) '/' $<repo>=( <-[ . ]>+ ) [ '.git' | "/" ]? $ / {
         return {
             project => ~$<project>,
             repo    => ~$<repo>,
+            slug    => ~$<project> ~ "/" ~ ~$<repo>,
         }
     }
     die "GitHub URL couldn't be parsed: $url";
+}
+
+method !make-github-url($project, $repo) {
+    $gh-url-base ~ $project ~ "/" ~ $repo ~ ".git"
 }
 
 method !command-to-enum($text is copy) {

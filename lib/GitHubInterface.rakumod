@@ -351,3 +351,9 @@ method can-user-merge-repo(Str :$owner!, Str :$repo!, Str :$username! --> Bool) 
     my %data = $!gh.repos-collaborators.get-collaborator-permission-level($owner, $repo, $username).data;
     return %data<permission> ~~ ("admin" | "write");
 }
+
+method get-branch(Str :$owner!, Str :$repo!, Str :$branch!) {
+    my $res = $!gh.repos-branches.get-branch($owner, $repo, $branch).data;
+    CATCH { return Nil }
+    return $res
+}
