@@ -95,7 +95,7 @@ method process-worklist() is serial-dedup {
                 $test-set.^save;
             }
             when DB::WAITING_FOR_TEST_RESULTS {
-                # TODO Check if all tests are done
+                self!check-test-set-done($test-set);
             }
         }
     }
@@ -123,7 +123,11 @@ method test-status-updated($test) {
 }
 
 method platform-test-set-done($platform-test-set) {
-    my $test-set = $platform-test-set.test-set;
+    self.process-worklist;
+}
+
+method !check-test-set-done($test-set) {
+    return if $test-set.platform-test-sets.elems < $!test-set-listeners.elems;
     if [&&] $test-set.platform-test-sets.map(*.status == DB::PLATFORM_DONE) {
         $test-set.finished-at = now;
         $test-set.status = DB::DONE;
