@@ -34,6 +34,7 @@
         "CITestStatusListener": "lib/CITestStatusListener.rakumod",
         "WebService::Azure::DevOps": "lib/WebService/Azure/DevOps.rakumod",
         "SourceArchiveCreator": "lib/SourceArchiveCreator.rakumod",
+        "FlapperDetector": "lib/FlapperDetector.rakumod",
         "GitHubCITestRequester": "lib/GitHubCITestRequester.rakumod",
         "GitHubInterface": "lib/GitHubInterface.rakumod",
         "DB": "lib/DB.rakumod",

@@ -29,29 +29,23 @@ method process-worklist() is serial-dedup {
                 if $command.pr {
                     my $ts = DB::CITestSet.^all.sort(-*.id).first( *.pr.number == $command.pr.number );
                     unless $ts {
-                        error "No PR for the given command found: " ~ $command.id;
+                        error "No TestSet for the PR of the given command found: " ~ $command.id;
                         $command.status = DB::COMMAND_DONE;
                         $command.^save;
                         next;
                     }
 
-                    $command.origin-test-set = $ts;
+                    $command.test-set = $ts;
                     $command.^save;
 
-                    trace "CITestSetManager: Adding re-test test set for command: " ~ $command.id;
-                    my $re-ts = DB::CITestSet.new:
-                        status => DB::UNPROCESSED,
-                        event-type => DB::COMMAND,
-                        project => $ts.project,
-                        git-url => $ts.git-url,
-                        commit-sha => $ts.commit-sha,
-                        user-url => $ts.user-url,
-                        |($ts.pr ?? (pr => $ts.pr,) !! ()),
-                        command => $command,
-                        source-archive-id => $ts.source-archive-id,
-                    ;
-                    $re-ts.source-spec($ts.source-spec);
-                    $re-ts.^save;
+                    trace "CITestSetManager: Starting re-test for command: " ~ $command.id;
+
+                    for $!test-set-listeners.keys {
+                        $_.re-test-test-set($ts)
+                    }
+
+                    $ts.status = DB::WAITING_FOR_TEST_RESULTS;
+                    $ts.^save;
 
                     $command.status = DB::COMMAND_DONE;
                     $command.^save;
@@ -129,7 +123,7 @@ method platform-test-set-done($platform-test-set) {
 method !check-test-set-done($test-set) {
     return if $test-set.platform-test-sets.elems < $!test-set-listeners.elems;
     if [&&] $test-set.platform-test-sets.map(*.status == DB::PLATFORM_DONE) {
-        $test-set.finished-at = now;
+        $test-set.finished-at = DateTime.now;
         $test-set.status = DB::DONE;
         $test-set.^save;
         $_.test-set-done($test-set) for $!status-listeners.keys;

@@ -80,6 +80,13 @@ model CITest is rw is table<citest> {
     has DB::CITestStatus      $.status                is column = NOT_STARTED;
     has Str                   $.log                   is column{ :nullable, :type<text> };
 
+    has UInt                  $!fk-successor          is referencing( *.id, :model(DB::CITest) );
+    has CITest                $.successor             is relationship( *.fk-successor );
+
+    has Str                   $.obs-arch              is column{ :nullable };
+    has Str                   $.obs-repository        is column{ :nullable };
+    has Bool                  $.obs-before-re-test    is column = False;
+
     # Responsibility of the GitHubCITestRequester
     has Str(Int)              $.github-id             is column{ :nullable };
     has DB::CITestStatus      $.status-pushed         is column = NOT_STARTED;
@@ -91,6 +98,7 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
 
     has DB::CIPlatformIdentifier    $.platform  is column{ :nullable };
     has DB::CIPlatformTestSetStatus $.status      is column = DB::PLATFORM_IN_PROGRESS;
+    has Bool                        $.re-test     is column = False;
     has UInt                        $!fk-test-set is referencing( *.id, :model(DB::CITestSet) );
     has DB::CITestSet               $.test-set    is relationship( *.fk-test-set );
 
@@ -105,7 +113,7 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
 model CITestSet is rw is table<citest_set> {
     has UInt                      $.id                       is serial;
     has DateTime                  $.creation                 is column .= now;
-    has DateTime                  $.finished-at              is column;
+    has DateTime                  $.finished-at              is column{ :nullable };
 
     # Responsibility of the GitHubCITestRequester
         has DB::GitHubEventType   $.event-type               is column;
@@ -118,10 +126,6 @@ model CITestSet is rw is table<citest_set> {
         # If this test request was caused by a PR or new commit therein.
         has UInt                  $!fk-pr                    is referencing( :nullable, *.id, :model(DB::GitHubPR) );
         has DB::GitHubPR          $.pr                       is relationship( *.fk-pr );
-
-        # If this test request was caused by a command.
-        has UInt                  $!fk-command               is referencing( :nullable, *.id, :model(DB::Command) );
-        has DB::Command           $.command                  is relationship( *.fk-command );
 
     # Responsibility of the CITestSetManager
         has DB::CITestSetStatus   $.status                   is column = NEW;
@@ -190,23 +194,19 @@ model Command is rw is table<command> {
     has UInt              $.id       is serial;
     has DateTime          $.creation is column .= now;
 
-    # If triggered via a GitHub PR
+    # If triggered via a GitHub PR comment
     has UInt              $!fk-pr          is referencing( *.id, :model(DB::GitHubPR) );
     has DB::GitHubPR      $.pr             is relationship( *.fk-pr );
     has Str               $.comment-author is column;
     has Str               $.comment-id     is column;
     has Str               $.comment-url    is column;
 
-    # If triggered via the Website the test set on whose web page the command was issued.
-    # If triggered via a PR comment, the test set that we ended up duplicating (re-test).
-    has UInt              $!fk-origin-test-set is referencing( *.id, :model(DB::CITestSet) );
-    has DB::CITestSet     $.origin-test-set    is relationship( *.fk-origin-test-set );
-
-    has DB::CommandEnum   $.command is column;
     has DB::CommandStatus $.status  is column;
+    has DB::CommandEnum   $.command is column;
 
-    # Should only ever be one.
-    has DB::CITestSet     @.test-sets  is relationship( *.fk-command );
+    # If it's a re-test command, the test set we should re test
+    has UInt              $!fk-test-set is referencing( *.id, :model(DB::CITestSet) );
+    has DB::CITestSet     $.test-set    is relationship( *.fk-test-set );
 }
 
 our sub drop-db() {

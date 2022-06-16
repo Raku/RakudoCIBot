@@ -128,6 +128,14 @@ method build-log($package, $arch, $repository) {
     self!req-plain: 'GET', "/build/$!project/$repository/$arch/$package/_log";
 }
 
+method set-test-disabled($package, $arch, $repository) {
+    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag&flag=build&status=disable&repository=$repository&arch=$arch";
+}
+
+method enable-all-tests($package) {
+    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag&flag=build&status=enable";
+}
+
 #POST /source/<project>/<package>?cmd=commit
 
 #POST /source/<project>/<package>?deleteuploadrev

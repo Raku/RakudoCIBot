@@ -17,11 +17,37 @@ has IO::Path $!work-dir is built is required where *.d;
 has OBSInterface $!interface is built is required;
 has CITestSetManager $!testset-manager is built is required;
 
+my %projects =
+    rakudo => {
+        package => "rakudo-moarvm",
+    },
+    nqp => {
+        package => "nqp-moarvm",
+    },
+    moar => {
+        package => "moarvm",
+    },
+;
+
 method new-test-set(DB::CITestSet $test-set) {
     DB::CIPlatformTestSet.^create:
         :$test-set,
         platform => DB::OBS;
 
+    self.process-worklist();
+}
+
+method re-test-test-set(DB::CITestSet $test-set) {
+    my $pts = DB::CIPlatformTestSet.^first({
+        $_.platform == DB::OBS &&
+        $_.test-set.id == $test-set.id
+    });
+
+    $pts.status = DB::PLATFORM_IN_PROGRESS;
+    $pts.obs-started-at = Nil;
+    $pts.obs-finished-at = Nil;
+    $pts.re-test = True;
+    $pts.^save;
     self.process-worklist();
 }
 
@@ -48,23 +74,48 @@ method process-worklist() is serial-dedup {
             $running-pts = $_;
             trace "OBS: Starting new run: " ~ $running-pts.id;
 
+            if $running-pts.re-test {
+                # It's a re-test. So only run tests that have failed.
+                # I.e. disable all succeeded tests.
+
+                for DB::CITest.^all.grep({
+                        $_.platform-test-set.id == $running-pts.id &&
+                        $_.status == DB::SUCCESS
+                }) -> $test {
+                    $test.before-re-test = True;
+                    $test.^save;
+                    if $test.status == DB::SUCCESS {
+                        for %projects.keys -> $project {
+                            my $package = %projects{$project}<package>;
+                            $!interface.set-test-disabled($package, $test.obs-arch, $test.obs-repository);
+                        }
+                    }
+                }
+            }
+            else {
+                # Reset all DISABLED flags.
+                for %projects.keys -> $project {
+                    my $package = %projects{$project}<package>;
+                    $!interface.enable-all-tests($package);
+                }
+            }
+
             my $source-id = $running-pts.test-set.source-archive-id;
-            for "moar", "moarvm",
-                    "nqp", "nqp-moarvm",
-                    "rakudo", "rakudo-moarvm" -> $project, $obs-project {
-                my @sources = $!interface.sources($obs-project);
-                $!interface.delete-file($obs-project, $_.name) with @sources.first({ $_.name ~~ / ^ 'PTS-ID-' / });
-                $!interface.delete-file($obs-project, $_.name) with @sources.first({ $_.name ~~ / '-' $project '.tar.xz' $ / });
+            for %projects.keys -> $project {
+                my $package = %projects{$project}<package>;
+                my @sources = $!interface.sources($package);
+                $!interface.delete-file($package, $_.name) with @sources.first({ $_.name ~~ / ^ 'PTS-ID-' / });
+                $!interface.delete-file($package, $_.name) with @sources.first({ $_.name ~~ / '-' $project '.tar.xz' $ / });
 
                 my $archive-path = $!source-archive-creator.get-archive-path($source-id, $project);
-                $!interface.upload-file($obs-project, "PTS-ID-" ~ $running-pts.id, :blob(""));
-                $!interface.upload-file($obs-project, $source-id ~ "-" ~ $project ~ ".tar.xz", :path($archive-path));
-                my $spec = %?RESOURCES{$obs-project ~ ".spec"}.slurp;
+                $!interface.upload-file($package, "PTS-ID-" ~ $running-pts.id, :blob(""));
+                $!interface.upload-file($package, $source-id ~ "-" ~ $project ~ ".tar.xz", :path($archive-path));
+                my $spec = %?RESOURCES{$package ~ ".spec"}.slurp;
                 $spec ~~ s{ '<moar_rev>' }   = $source-id;
                 $spec ~~ s{ '<nqp_rev>' }    = $source-id;
                 $spec ~~ s{ '<rakudo_rev>' } = $source-id;
-                $!interface.upload-file($obs-project, $obs-project ~ ".spec", :blob($spec));
-                my $dom = $!interface.commit($obs-project);
+                $!interface.upload-file($package, $package ~ ".spec", :blob($spec));
+                my $dom = $!interface.commit($package);
             }
 
             $running-pts.obs-started-at = DateTime.now;
@@ -79,8 +130,7 @@ method process-worklist() is serial-dedup {
         trace "OBS: Looking at test set again: " ~ $running-pts.id;
 
         # Let's retrieve the ID of that test run and validate our database and OBS agree.
-        # TODO: Hardcoding the project here is OK?
-        my @sources = $!interface.sources("rakudo-moarvm");
+        my @sources = $!interface.sources(%projects<rakudo><package>);
         unless my $id-source = @sources.first({ $_.name ~~ / ^ 'PTS-ID-' / }) {
             error "No id found in OBS build files.";
             return;
@@ -94,9 +144,10 @@ method process-worklist() is serial-dedup {
     }
 
     if $running-pts {
-        # There is a running test we should check for.
+        # There is a running pts we should check for.
         my @known-tests = DB::CITest.^all.grep({
-            $_.platform-test-set.id == $running-pts.id
+            $_.platform-test-set.id == $running-pts.id &&
+            !$_.before-re-test
         });
 
         for $!interface.builds() -> $build {
@@ -117,6 +168,8 @@ method process-worklist() is serial-dedup {
                     $test-is-new = True;
                     DB::CITest.new:
                         name              => $test-name,
+                        obs-arch          => $build.arch,
+                        obs-repository    => $build.repository,
                         :$status,
                         platform-test-set => $running-pts,
                         test-started-at   => DateTime.now,
@@ -148,6 +201,17 @@ method process-worklist() is serial-dedup {
             }
 
             $test.^save;
+
+            if $test-is-new && $running-pts.re-test {
+                with DB::CITest.^first({
+                        $_.platform-test-set.id == $running-pts.id &&
+                        $_.name == $test-name &&
+                        $_.before-re-test &&
+                        !$_.successor.defined
+                }) {
+                    $_.successor = $test;
+                }
+            }
 
             if $test-is-new {
                 $!testset-manager.add-tests($test);

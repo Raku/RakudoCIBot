@@ -137,7 +137,7 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                     $_.number == $comment.pr-number
                     && $_.project == $proj-repo<db-project>
                 });
-        return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it.
+        return unless $pr; # If the PR object isn't there, we'll just pass. Polling will take care of it. Should never happen.
 
         with $command {
             return with DB::Command.^all.first({
@@ -419,7 +419,7 @@ method !process-merge-on-success() {
     my @merge-commands = DB::Command.^all.grep({
             $_.status == DB::COMMAND_NEW &&
             $_.command == DB::MERGE_ON_SUCCESS &&
-            $_.pr
+            $_.pr.defined
     }).Seq;
 
     for @merge-commands.categorize(*.pr.number).kv -> $pr-num, @pr-mcs {
