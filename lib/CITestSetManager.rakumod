@@ -8,10 +8,10 @@ use SourceArchiveCreator;
 use Config;
 use Red::Operators:api<2>;
 
-
 has SetHash $!status-listeners .= new;
 has SetHash $!test-set-listeners .= new;
 has $!source-archive-creator is built is required;
+has $!flapper-detector is built is required;
 
 method register-status-listener($status-listener) {
     $!status-listeners.set: $status-listener;
@@ -94,6 +94,8 @@ method process-worklist() is serial-dedup {
         }
     }
 
+    self!check-for-flappers();
+
     CATCH {
         default {
             error "Failed processing CITestSetManagers worklist: " ~ .message ~ .backtrace.Str
@@ -114,6 +116,7 @@ method add-tests(*@tests) {
 
 method test-status-updated($test) {
     $_.test-status-changed($test) for $!status-listeners.keys;
+    self.process-worklist;
 }
 
 method platform-test-set-done($platform-test-set) {
@@ -130,3 +133,29 @@ method !check-test-set-done($test-set) {
     }
 }
 
+method !check-for-flappers() {
+    for DB::CITest.^all.grep({
+            $_.status == DB::FAILURE &&
+            !$_.flapper-checked
+    }) -> $test {
+        without DB::CITest.^first({
+                $_.successor.id == $test.id &&
+                $_.flapper-checked &&
+                $_.flapper.defined
+        }) {
+            # It's not a flapper re-test.
+            if $!flapper-detector.is-flapper($test.log) {
+                my $ts = $test.test-set;
+                for $!test-set-listeners.keys {
+                    $_.re-test-test-set($ts)
+                }
+
+                $ts.status = DB::WAITING_FOR_TEST_RESULTS;
+                $ts.^save;
+            }
+
+            $test.flapper-checked = True;
+            $test.^save;
+        }
+    }
+}

@@ -78,6 +78,8 @@ model CITest is rw is table<citest> {
     has DateTime              $.test-started-at       is column{ :nullable };
     has DateTime              $.test-finished-at      is column{ :nullable };
     has DB::CITestStatus      $.status                is column = NOT_STARTED;
+    has Bool                  $.flapper-checked       is column = False;
+    has Str                   $.flapper               is column{ :nullable };
     has Str                   $.log                   is column{ :nullable, :type<text> };
 
     has UInt                  $!fk-successor          is referencing( *.id, :model(DB::CITest) );

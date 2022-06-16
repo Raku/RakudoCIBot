@@ -52,6 +52,7 @@ submethod TWEAK() {
     ;
     $!testset-manager .= new:
         :$!source-archive-creator,
+        :$!flapper-detector,
     ;
     $!requester .= new:
         :$!testset-manager,
