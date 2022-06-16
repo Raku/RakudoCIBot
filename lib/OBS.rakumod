@@ -82,7 +82,7 @@ method process-worklist() is serial-dedup {
                         $_.platform-test-set.id == $running-pts.id &&
                         $_.status == DB::SUCCESS
                 }) -> $test {
-                    $test.before-re-test = True;
+                    $test.obs-before-re-test = True;
                     $test.^save;
                     if $test.status == DB::SUCCESS {
                         for %projects.keys -> $project {
@@ -147,7 +147,7 @@ method process-worklist() is serial-dedup {
         # There is a running pts we should check for.
         my @known-tests = DB::CITest.^all.grep({
             $_.platform-test-set.id == $running-pts.id &&
-            !$_.before-re-test
+            !$_.obs-before-re-test
         });
 
         for $!interface.builds() -> $build {
@@ -206,7 +206,7 @@ method process-worklist() is serial-dedup {
                 with DB::CITest.^first({
                         $_.platform-test-set.id == $running-pts.id &&
                         $_.name == $test-name &&
-                        $_.before-re-test &&
+                        $_.obs-before-re-test &&
                         !$_.successor.defined
                 }) {
                     $_.successor = $test;

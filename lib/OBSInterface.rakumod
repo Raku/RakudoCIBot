@@ -36,10 +36,13 @@ submethod TWEAK() {
         ]
 }
 
-method !req-plain($method, $url-path, $body-data?) {
+method !req-plain($method, $url-path, :$body-data, :%form-data) {
     my $res;
     if $body-data {
         $res = await $!cro.request: $method, $!apiurl ~ $url-path, body => $body-data;
+    }
+    elsif %form-data {
+        $res = await $!cro.request: $method, $!apiurl ~ $url-path, content-type => 'application/x-www-form-urlencoded', body => %form-data;
     }
     else {
         $res = await $!cro.request: $method, $!apiurl ~ $url-path;
@@ -52,8 +55,8 @@ method !req-plain($method, $url-path, $body-data?) {
     return await $res.body;
 }
 
-method !req-dom($method, $url-path, $body-data?) {
-    my $content = self!req-plain($method, $url-path, $body-data);
+method !req-dom($method, $url-path, :$body-data, :%form-data) {
+    my $content = self!req-plain($method, $url-path, :$body-data, :%form-data);
     my $d = $!xml-parser.parse: $content;
     $d;
 }
@@ -65,7 +68,7 @@ method server-revision() {
 
 method upload-file($package, $filename, :$path, :$blob) {
     my $data = $path ?? $path.IO.slurp(:bin) !! $blob;
-    self!req-dom: 'PUT', "/source/$!project/$package/$filename?rev=upload", $data;
+    self!req-dom: 'PUT', "/source/$!project/$package/$filename?rev=upload", body-data => $data;
 }
 
 method delete-file($package, $filename) {
@@ -129,18 +132,18 @@ method build-log($package, $arch, $repository) {
 }
 
 method set-test-disabled($package, $arch, $repository) {
-    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag&flag=build&status=disable&repository=$repository&arch=$arch";
+    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
+        flag => "build",
+        status => "disable",
+        :$repository,
+        :$arch,
+    }
 }
 
 method enable-all-tests($package) {
-    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag&flag=build&status=enable";
+    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
+        flag => "build",
+        status => "enable",
+    };
 }
-
-#POST /source/<project>/<package>?cmd=commit
-
-#POST /source/<project>/<package>?deleteuploadrev
-
-#PUT /source/<project>/<package>/<filename>
-
-#DELETE /source/<project>/<package>/<filename>
 
