@@ -6,6 +6,7 @@ use Log::Async;
 
 use Config;
 use Red:api<2>;
+use FlapperDetector;
 use GitHubInterface;
 use GitHubCITestRequester;
 use CITestSetManager;
@@ -15,6 +16,7 @@ use SourceArchiveCreator;
 use Routes;
 use DB;
 
+has FlapperDetector $!flapper-detector;
 has SourceArchiveCreator $!source-archive-creator;
 has GitHubInterface $!github-interface;
 has GitHubCITestRequester $!requester;
@@ -41,6 +43,8 @@ submethod TWEAK() {
     my $gh-pem = %*ENV<GITHUB_PEM> ?? %*ENV<GITHUB_PEM> !!
                  config.github-app-key-file ?? config.github-app-key-file.IO.slurp !!
                  die 'Neither GITHUB_PEM environment variable nor config entry github-app-key-file given.';
+
+    $!flapper-detector .= new;
 
     $!source-archive-creator .= new:
         work-dir => config.sac-work-dir.IO,
@@ -83,12 +87,15 @@ method start() {
         }
         whenever Supply.interval(config.github-requester-interval) {
             #my $*RED-DEBUG = True;
-            $!requester.poll-for-changes;
+            #$!requester.poll-for-changes;
             $!requester.process-worklist;
         }
         whenever Supply.interval(config.obs-interval) {
             #my $*RED-DEBUG = True;
             $!obs.process-worklist;
+        }
+        whenever Supply.interval(config.flapper-list-interval) {
+            #$!flapper-detector.refresh-flapper-list;
         }
         whenever $!running {
             done()

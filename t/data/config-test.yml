@@ -41,10 +41,12 @@ github-max-source-retrieval-retries: 1
 sac-work-dir: work/sac-work
 sac-store-dir: work/sac-store
 obs-work-dir: work/obs-work
+flapper-list-url: https://dummy-domain.org/flapper-list.yml
 
 testset-manager-interval: 300 # 5 * 60
 github-requester-interval: 300 # 5 * 60
 obs-interval: 300 # 5 * 60
+flapper-list-interval: 3600 # 60 * 60
 
 web-host: localhost
 web-port: 10000

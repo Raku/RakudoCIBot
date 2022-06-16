@@ -46,9 +46,12 @@ class Config {
     has $.sac-store-dir;
     has $.obs-work-dir;
 
+    has $.flapper-list-url;
+
     has $.testset-manager-interval;
     has $.github-requester-interval;
     has $.obs-interval;
+    has $.flapper-list-interval;
 
     has $.web-host;
     has $.web-port;
@@ -81,9 +84,12 @@ class Config {
             sac-store-dir => %config<sac-store-dir>,
             obs-work-dir  => %config<obs-work-dir>,
 
+            flapper-list-url => %config<flapper-list-url>,
+
             testset-manager-interval  => %config<testset-manager-interval>,
             github-requester-interval => %config<github-requester-interval>,
             obs-interval              => %config<obs-interval>,
+            flapper-list-interval => %config<flapper-list-interval>,
 
             web-host => %config<web-host>,
             web-port => %config<web-port>,
