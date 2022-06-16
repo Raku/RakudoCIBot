@@ -4,7 +4,6 @@ use Config;
 use Log::Async;
 use WebService::GitHub::AppAuth;
 use WebService::GitHub;
-use Cro::HTTP::Client;
 use GitHubCITestRequester;
 
 constant $gql-endpoint = "https://api.github.com/graphql";
