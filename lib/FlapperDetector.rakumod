@@ -40,12 +40,12 @@ method refresh-flapper-list() is serial-dedup {
         }
     }
     my $res = await $!cro.get: config.flapper-list-url;
-    my $body = await $res.body;
+    my $body = await $res.body-text;
     my @yml-list = load-yaml($body);
     my @flappers = @yml-list.map: {
         Flapper.new:
-            name => $_.name,
-            matcher => $_.matcher;
+            name => $_<name>,
+            matcher => $_<matcher>;
     };
     @!flappers = @flappers;
 }

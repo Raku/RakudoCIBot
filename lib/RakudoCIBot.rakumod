@@ -95,7 +95,7 @@ method start() {
             $!obs.process-worklist;
         }
         whenever Supply.interval(config.flapper-list-interval) {
-            #$!flapper-detector.refresh-flapper-list;
+            $!flapper-detector.refresh-flapper-list;
         }
         whenever $!running {
             done()
