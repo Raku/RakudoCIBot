@@ -12,6 +12,7 @@ use CITestSetManager;
 use OBSInterface;
 use OBS;
 use SourceArchiveCreator;
+use FlapperDetector;
 
 set-config($*PROGRAM.parent.add("data/config-test.yml"));
 logger.untapped-ok = True;
@@ -30,6 +31,12 @@ my $*SERIAL_DEDUP_NO_THREADING = True;
 my $dummy-src-id = "some dummy id";
 my $dummy-src-path = "/some/path";
 my $dummy-log = "Build Succeeded! Yay!";
+
+my $flapper-detector = mocked(FlapperDetector,
+    returning => {
+        is-flapper => False,
+    }
+);
 
 my $github-interface = mocked(GitHubInterface,
     returning => {
@@ -86,6 +93,7 @@ my $source-archive-creator = mocked(SourceArchiveCreator,
 
 my CITestSetManager $testset-manager .= new:
     :$source-archive-creator,
+    :$flapper-detector,
 ;
 
 my GitHubCITestRequester $requester .= new:
@@ -107,9 +115,10 @@ $requester.add-task: GitHubCITestRequester::PRTask.new:
     number       => 4574,
     title        => "[JVM] Restore pre-new-disp behaviour for phasers",
     body         => "Lalala hie a hiea.",
-    state        => "OPEN",
-    git-url      => "https://github.com/usev6/rakudo.git",
+    state        => GitHubCITestRequester::PR_OPEN,
     head-branch  => "jvm_phasers_new-disp",
+    base-url     => "https://github.com/rakudo/rakudo.git",
+    head-url     => "https://github.com/usev6/rakudo.git",
     user-url     => "https://github.com/rakudo/rakudo/pull/4574",
     commit-task  => GitHubCITestRequester::PRCommitTask.new(
         repo         => "rakudo",
@@ -133,7 +142,7 @@ check-mock($github-interface,
     *.called("create-check-run", with => :(
         :$id!,
         Str:D :$name!,
-        :$owner! where "usev6",
+        :$owner! where "rakudo",
         :$repo!  where "rakudo",
         :$sha!   where "9ca813b7c4c8e429eb4da637aefd953f89f8af22",
         DateTime:D :$started-at!,
@@ -145,7 +154,7 @@ check-mock($github-interface,
 $obs.process-worklist();
 check-mock($github-interface,
     *.called("update-check-run", with => :(
-        :$owner! where "usev6",
+        :$owner! where "rakudo",
         :$repo!  where "rakudo",
         :$check-run-id! where 1528,
         :$status! where "completed",

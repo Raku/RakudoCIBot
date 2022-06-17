@@ -133,7 +133,7 @@ model CITestSet is rw is table<citest_set> {
         has DB::CITestSetStatus   $.status                   is column = NEW;
         has DB::CITestSetError    $.error                    is column{ :nullable };
 
-        has Str                   $!rakudo-git-url           is column{ :nullable }; # e.g. 'rakudo/rakudo'
+        has Str                   $!rakudo-git-url           is column{ :nullable };
         has Str                   $!rakudo-commit-sha        is column{ :nullable };
         has Str                   $!nqp-git-url              is column{ :nullable };
         has Str                   $!nqp-commit-sha           is column{ :nullable };

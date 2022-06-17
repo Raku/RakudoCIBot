@@ -227,6 +227,7 @@ method poll-for-changes() is serial-dedup {
 }
 
 method process-worklist() is serial-dedup {
+
     trace "GitHub: Processing worklist";
     for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
         trace "GitHub: Processing NEW TestSet";
@@ -354,15 +355,15 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
             for DB::RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $r-proj, $r-repo,
                     DB::NQP, $nqp-git-url, $nqp-commit-sha, $n-proj, $n-repo,
                     DB::MOAR, $moar-git-url, $moar-commit-sha, $m-proj, $m-repo
-            -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $project, $repo {
+            -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $gh-project, $repo {
                 if $cur-proj == $project {
                     $out-url = $git-url;
                     $out-commit-sha = $commit-sha;
                 }
                 else {
-                    my $branch-data = $!github-interface.get-branch($project, $repo, $branch);
+                    my $branch-data = $!github-interface.get-branch($gh-project, $repo, $branch);
                     with $branch-data {
-                        $out-url = self!make-github-url($project, $repo);
+                        $out-url = self!make-github-url($gh-project, $repo);
                         $out-commit-sha = $branch-data<commit><sha>;
                     }
                     else {

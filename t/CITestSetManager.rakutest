@@ -6,6 +6,7 @@ use Config;
 use SourceArchiveCreator;
 use CITestStatusListener;
 use CITestSetManager;
+use FlapperDetector;
 use DB;
 use Red:api<2>;
 
@@ -22,6 +23,12 @@ my $*SERIAL_DEDUP_NO_THREADING = True;
 
 ### Mocks
 # cp = CI platform
+my $flapper-detector = mocked(FlapperDetector,
+    returning => {
+        is-flapper => False,
+    }
+);
+
 class TestCIPlatform {
     has $.test-set;
     method new-test-set($!test-set) {}
@@ -41,6 +48,10 @@ class TestCITestStatusListener does CITestStatusListener {
     method test-set-done($) {
         ...
     }
+
+    method command-accepted($) {
+        ...
+    }
 }
 
 my $dummy-id = "some dummy id";
@@ -57,7 +68,9 @@ my $sac = TestSourceArchiveCreator.new;
 my $gh = TestCITestStatusListener.new;
 
 my CITestSetManager $tsm .= new:
-    source-archive-creator => $sac;
+    source-archive-creator => $sac,
+    :$flapper-detector,
+;
 
 ### Register the listeners
 $tsm.register-test-set-listener: $cp;

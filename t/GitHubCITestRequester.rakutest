@@ -31,12 +31,13 @@ my $interface = mocked(GitHubInterface,
                 prs => (
                     GitHubCITestRequester::PRTask.new(
                         repo         => "rakudo",
-                        git-url      => 'https://github.com/rakudo/rakudo.git',
                         head-branch  => "feature-1",
+                        base-url     => "https://github.com/rakudo/rakudo.git",
+                        head-url     => "https://github.com/rakudo/rakudo.git",
                         number       => 1,
                         title        => "Some feature",
                         body         => "Add this nice feature",
-                        state        => "OPEN",
+                        state        => GitHubCITestRequester::PR_OPEN,
                         user-url     => 'https://github.com/rakudo/rakudo/pull/1',
                         comments     => (
                             GitHubCITestRequester::PRCommentTask.new(
@@ -44,6 +45,8 @@ my $interface = mocked(GitHubInterface,
                                 created-at => "2021-10-10T14:58:23",
                                 updated-at => "2021-10-10T14:58:23",
                                 pr-number  => 1,
+                                pr-repo    => "rakudo",
+                                author     => "patrickbkr",
                                 user-url   => 'https://github.com/rakudo/rakudo/pull/1#issuecomment-939398255',
                                 body       => "LGTM. Let's do this!"
                             ),

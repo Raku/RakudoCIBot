@@ -18,9 +18,10 @@ $parser.parse-hook-request('pull_request', from-json $data-dir.add("webhook-gith
 check-mock($processor,
     *.called('add-task', times => 1, with => :( GitHubCITestRequester::PRTask $ where {
         $_.number == 3
-        && $_.user-url eq "https://api.github.com/repos/patrickbkr/GitHub-API-Testing/pulls/3"
-        && $_.body eq "Some description."
-        && $_.git-url eq "https://github.com/patrickbkr/GitHub-API-Testing.git"
+        && $_.user-url eq "https://github.com/patrickbkr/GitHub-API-Testing/pull/3"
+        && $_.comments[0].body eq "Some description."
+        && $_.head-url eq "https://github.com/patrickbkr/GitHub-API-Testing.git"
+        && $_.base-url eq "https://github.com/patrickbkr/GitHub-API-Testing.git"
         && $_.head-branch eq "feature-branch-1"
         && $_.commit-task.commit-sha eq "f2b9e0fca8ad20c14bdc188240918720613d2cee"
         && $_.commit-task.user-url eq "https://github.com/patrickbkr/GitHub-API-Testing/pull/3/commits/f2b9e0fca8ad20c14bdc188240918720613d2cee"

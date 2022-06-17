@@ -67,18 +67,18 @@ method parse-hook-request($event, %json) {
                     comments    => [GitHubCITestRequester::PRCommentTask.new(
                         id         => %json<pull_request><node_id>,
                         created-at => %json<pull_request><created_at>,
-                        updated-at => $%json<pull_request><updated_at>,
+                        updated-at => %json<pull_request><updated_at>,
                         pr-repo    => %json<pull_request><base><repo><name>,
                         pr-number  => %json<pull_request><number>,
                         user-url   => %json<pull_request><html_url>,
-                        author     => %json<pull_request><user><login>;
+                        author     => %json<pull_request><user><login>,
                         body       => %json<pull_request><body>,
                     )],
                     commit-task => GitHubCITestRequester::PRCommitTask.new(
                         repo       => %json<pull_request><base><repo><name>,
                         pr-number  => %json<pull_request><number>,
                         commit-sha => %json<pull_request><head><sha>,
-                        user-url   => %json<pull_request><html_url> ~ %json<pull_request><number> ~ "/commits/" ~ %json<pull_request><head><sha>,
+                        user-url   => %json<pull_request><html_url> ~ "/commits/" ~ %json<pull_request><head><sha>,
                     ),
                 );
             }
