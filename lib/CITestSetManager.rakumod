@@ -138,7 +138,7 @@ method !check-for-flappers() {
             $_.status == DB::FAILURE &&
             !$_.flapper-checked
     }) -> $test {
-        without DB::CITest.^first({
+        without DB::CITest.^all.first({
                 $_.successor.id == $test.id &&
                 $_.flapper-checked &&
                 $_.flapper.defined

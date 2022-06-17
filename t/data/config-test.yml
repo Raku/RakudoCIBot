@@ -24,12 +24,16 @@ projects:
         repo-url: https://github.com/MoarVM/MoarVM.git
         install-id: 20243470
 
+hook-url: https://rcb-host.org/
+
 obs-user: someuser
 obs-password: "some_password"
 
 # Disable limiters so we can reliably guide processing of the work list.
 obs-check-duration: 0
 obs-min-run-duration: 0
+obs-min-hook-to-build-end-duration: 120
+obs-build-end-poll-interval: 30
 obs-packages:
     - moarvm
     - nqp-moarvm

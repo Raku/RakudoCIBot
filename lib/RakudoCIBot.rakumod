@@ -107,7 +107,7 @@ method start() {
         http => <1.1>,
         host => config.web-host,
         port => config.web-port,
-        application => routes($!source-archive-creator, $!github-interface),
+        application => routes($!source-archive-creator, $!github-interface, $!obs),
         after => [
             Cro::HTTP::Log::File.new(logs => $*OUT, errors => $*ERR)
         ]

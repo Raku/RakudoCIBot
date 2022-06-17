@@ -31,11 +31,15 @@ class Config {
     has $.github-app-key-file;
     has $.projects;
 
+    has $.hook-url;
+
     has $.obs-user;
     has $.obs-password;
 
     has $.obs-check-duration;
     has $.obs-min-run-duration;
+    has $.obs-min-hook-to-build-end-duration;
+    has $.obs-build-end-poll-interval;
     has @.obs-packages;
 
     #| How many latest-changes-PullRequests the GitHub polling logic should retrieve.
@@ -70,12 +74,16 @@ class Config {
                                        moar   => ConfigProject.from-config(%config<projects><moar>),
                                    ),
 
+            hook-url => %config<hook-url>,
+
             obs-user     => %config<obs-user>,
             obs-password => %config<obs-password>,
 
-            obs-check-duration   => %config<obs-check-duration>,
-            obs-min-run-duration => %config<obs-min-run-duration>,
-            obs-packages         => |%config<obs-packages>,
+            obs-check-duration                 => %config<obs-check-duration>,
+            obs-min-run-duration               => %config<obs-min-run-duration>,
+            obs-min-hook-to-build-end-duration => %config<obs-min-hook-to-build-end-duration>,
+            obs-build-end-poll-interval        => %config<obs-build-end-poll-interval>,
+            obs-packages                       => |%config<obs-packages>,
 
             github-check-batch-count            => %config<github-check-batch-count>,
             github-max-source-retrieval-retries => %config<github-max-source-retrieval-retries>,
@@ -89,7 +97,7 @@ class Config {
             testset-manager-interval  => %config<testset-manager-interval>,
             github-requester-interval => %config<github-requester-interval>,
             obs-interval              => %config<obs-interval>,
-            flapper-list-interval => %config<flapper-list-interval>,
+            flapper-list-interval     => %config<flapper-list-interval>,
 
             web-host => %config<web-host>,
             web-port => %config<web-port>,

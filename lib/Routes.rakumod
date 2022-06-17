@@ -6,10 +6,12 @@ use Routes::test;
 use Routes::testset;
 use Routes::source;
 use Routes::GitHubHook;
+use Routes::OBSHook;
 use SourceArchiveCreator;
 use GitHubInterface;
+use OBS;
 
-sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface) is export {
+sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface, OBS $obs) is export {
     template-location 'resources/templates/';
     route {
         resources-from %?RESOURCES;
@@ -30,5 +32,6 @@ sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface) is expo
         include testset-routes;
         include source-routes($sac);
         include github-hook-routes($github-interface);
+        include obs-hook-routes($obs);
     }
 }

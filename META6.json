@@ -10,7 +10,7 @@
         "LibXML:ver<0.7.4>:auth<zef:dwarring>",
         "Base64:ver<0.0.2>:auth<github:ugexe>",
         "OO::Monitors:ver<1.1.1>",
-        "Red:ver<0.1.60>:auth<zef:FCO>:api<2>",
+        "Red:ver<0.1.62>:auth<zef:FCO>:api<2>",
         "Log::Async:ver<0.0.8>",
         "JSON::JWT:ver<1.1.1>:auth<zef:raku-community-modules>",
         "YAMLish:ver<0.0.6>",
@@ -51,7 +51,8 @@
         "Routes::test": "lib/Routes/test.rakumod",
         "Routes::testset": "lib/Routes/testset.rakumod",
         "Routes::source": "lib/Routes/source.rakumod",
-        "Routes::GitHubHook": "lib/Routes/GitHubHook.rakumod"
+        "Routes::GitHubHook": "lib/Routes/GitHubHook.rakumod",
+        "Routes::OBSHook": "lib/Routes/OBSHook.rakumod"
     },
     "resources": [
         "templates/page.crotmp",

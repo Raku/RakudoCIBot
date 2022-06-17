@@ -32,6 +32,7 @@ BuildRequires:  fdupes
 BuildRequires:  moarvm-devel = %moar_rev
 BuildRequires:  nqp-moarvm = %nqp_rev
 BuildRequires:  perl(YAML::Tiny)
+BuildRequires:  curl
 Provides:       raku = %{version}
 Requires:       nqp-moarvm = %nqp_rev
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -51,12 +52,13 @@ runs on the MoarVM virtual machine.
 perl Configure.pl --prefix="%{_prefix}" --ignore-errors
 make
 
-%ifnarch armv6l armv6hl
 # See armv6 issue: https://github.com/rakudo/rakudo/issues/2513
 %check
+%ifnarch armv6l armv6hl
 rm t/08-performance/99-misc.t
 ROAST_TIMING_SCALE=10 RAKUDO_SKIP_TIMING_TESTS=1 make test
 %endif
+curl -X POST <rcb_hook_url>
 
 %install
 %make_install
