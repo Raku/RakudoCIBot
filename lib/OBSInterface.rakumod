@@ -128,7 +128,19 @@ method sources($package) {
 }
 
 method build-log($package, $arch, $repository) {
-    self!req-plain: 'GET', "/build/$!project/$repository/$arch/$package/_log";
+    my $url = $!apiurl ~ "/build/$!project/$repository/$arch/$package/_log";
+    my $res = await $!cro.get: $url;
+    CATCH {
+        when X::Cro::HTTP::Error {
+			if .response.status == 404 {
+                return Nil;
+			}
+			else {
+				die "OBS build-log request failed: $url" ~ $_;
+			}
+        }
+    }
+    return await $res.body;
 }
 
 method set-test-disabled($package, $arch, $repository) {
