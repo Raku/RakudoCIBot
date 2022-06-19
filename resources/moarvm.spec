@@ -47,6 +47,14 @@ the NQP compiler toolchain.
 Summary:        MoarVM development headers and libraries
 Group:          Development/Libraries/Other
 Requires:       %{name} = %{version}
+Requires:       pkgconfig(libffi)
+%if 0%{?suse_version} >= 1550
+Requires:       pkgconfig(libtommath)
+Requires:       pkgconfig(libuv)
+%endif
+%if !0%{?rhel_version}
+Requires:       pkgconfig(libzstd)
+%endif
 
 %description devel
 MoarVM (Metamodel On A Runtime) development headers.
