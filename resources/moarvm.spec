@@ -27,12 +27,14 @@ URL:            http://moarvm.org
 Source:         http://raku-ci.org/test/12345/%{moar_rev}-moar.tar.xz
 # PATCH-FIX-OPENSUSE boo#1100677
 Patch0:         reproducible.patch
-Patch1:         moarvm-segfault.diff
 BuildRequires:  perl(ExtUtils::Command)
-%ifarch s390x
-BuildRequires:  libffi-devel
-Requires:       libffi8
-%define         ffiopt --has-libffi
+BuildRequires:  pkgconfig(libffi)
+%if 0%{?suse_version} >= 1550
+BuildRequires:  pkgconfig(libtommath)
+BuildRequires:  pkgconfig(libuv)
+%endif
+%if !0%{?rhel_version}
+BuildRequires:  pkgconfig(libzstd)
 %endif
 
 %description
@@ -52,14 +54,22 @@ MoarVM (Metamodel On A Runtime) development headers.
 %prep
 %setup -q -n %{moar_rev}-moar
 %patch0 -p1
-%patch1 -p1
 
 %build
-perl Configure.pl --prefix=%{_usr} --libdir=%{_libdir} --debug --optimize=3 %{ffiopt}
+extra_config_args=
+%if 0%{?suse_version} >= 1550
+extra_config_args+=" --has-libtommath --has-libuv"
+%endif
+%ifarch riscv64
+extra_config_args+=" --c11-atomics"
+%endif
+CFLAGS="%{optflags}" \
+perl Configure.pl --prefix=%{_usr} --libdir=%{_libdir} --debug --optimize=3 --has-libffi $extra_config_args
 make NOISY=1 %{?_smp_mflags}
 
 %install
 %make_install
+find %buildroot -type f \( -name '*.so' -o -name '*.so.*' \) -exec chmod 755 {} +
 mkdir -p $RPM_BUILD_ROOT/%{_libdir}/moar/share
 
 %files

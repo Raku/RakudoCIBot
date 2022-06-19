@@ -37,7 +37,7 @@ BuildRequires:  libffi-devel
 
 %description
 This is "Not Quite Perl" -- a compiler for a subset of Raku used
-to implement a full Raku compiler. This package provides NQP running
+to implement the full Rakudo compiler. This package provides NQP running
 on the MoarVM virtual machine.
 
 %prep
