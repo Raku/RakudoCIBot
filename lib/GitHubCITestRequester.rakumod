@@ -213,7 +213,9 @@ method poll-for-changes() is serial-dedup {
 
         # Default branch commits
         my %commit-data = $!github-interface.retrieve-default-branch-commits($project.project, $project.repo, |($state.last-default-branch-cursor ?? last-cursor => $state.last-default-branch-cursor !! ()));
-        self.add-task($_) for %commit-data<commits><>;
+        # Only add the latest commit. If many were pushed at once (a PR or large push)
+        # there isn't much point in testing all intermediary commits.
+        self.add-task($_) for %commit-data<commits><>[0];
         if %commit-data<last-cursor> {
             $state.last-default-branch-cursor = %commit-data<last-cursor>;
             $state.^save;
