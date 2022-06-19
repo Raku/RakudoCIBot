@@ -3,6 +3,35 @@
 <h1>Rakudo CI Bot</h1>
 
 <h2>Recent test runs</h2>
-...
+
+<table>
+<thead><tr>
+  <td>ID</td>
+  <td>Project</td>
+  <td>SHA</td>
+  <td>Start / End</td>
+  <td>Status</td>
+  <td></td>
+  <td>Link</td>
+</tr></thead>
+<tbody>
+
+<@.test-sets>
+<tr>
+  <td><.id></td>
+  <td><.project></td>
+  <td><.commit-sha></td>
+  <td>
+    <.created-at><br/>
+    <.finished-at><br/>
+  </td>
+  <td><.status></td>
+  <td><div class="status-indicator <.status-indicator-class>"></div></td>
+  <td><a href="<.test-set-url>">Test Set</a></td>
+</tr>
+</@>
+
+</tbody>
+</table>
 
 </|>

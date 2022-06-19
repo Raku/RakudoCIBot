@@ -17,7 +17,7 @@ sub testset-routes() is export {
                     status => .status,
                     status-indicator-class =>
                         (.status != DB::DONE ?? "in-progress" !!
-                        [&&] .platform-test-sets.Seq.map({ $_.tests.Seq.map({.status == DB::SUCCESS}) }).flat ?? "success" !! "failure"),
+                        ([&&] .platform-test-sets.Seq.map({ $_.tests.Seq.map({.status == DB::SUCCESS}) }).flat) ?? "success" !! "failure"),
                     error => .error,
                     rakudo-git-url => .source-spec.rakudo-git-url,
                     rakudo-commit-sha => .source-spec.rakudo-commit-sha,
@@ -25,7 +25,7 @@ sub testset-routes() is export {
                     nqp-commit-sha => .source-spec.nqp-commit-sha,
                     moar-git-url => .source-spec.moar-git-url,
                     moar-commit-sha => .source-spec.moar-commit-sha,
-                    source-link => "/source/" ~ .source-archive-id,
+                    source-link => (.source-archive-id ?? "/source/" ~ .source-archive-id !! ""),
                     backends => .platform-test-sets.Seq.map({%(
                         name => do given .platform {
                             when DB::AZURE { "Azure CI" }
