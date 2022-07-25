@@ -1,4 +1,5 @@
 use DB;
+use Formatters;
 
 use Cro::HTTP::Router;
 use Cro::WebApp::Template;
@@ -39,9 +40,9 @@ sub testset-routes() is export {
                                 "failure",
                             name => .name,
                             status => .status,
-                            created-at => .creation,
-                            started-at => .test-started-at,
-                            finished-at => .test-finished-at,
+                            created-at => format-dt(.creation),
+                            started-at => format-dt(.test-started-at),
+                            finished-at => format-dt(.test-finished-at),
                             backend-url => "todo",
                             log-url => "/test/{.id}/log",
                         )}),

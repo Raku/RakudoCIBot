@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>RCB - $title</title>
+  <title>RCB - <$title></title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -12,11 +12,6 @@
   <meta property="og:type" content="website">
   <meta property="og:description" content="CI controller for the Rakudo project">
   <meta property="og:url" content="https://cibot.rakudo.org/">
-  <meta property="og:image" content="https://cibot.rakudo.org/icon.png">
-
-  <link rel="manifest" href="site.webmanifest">
-  <link rel="apple-touch-icon" href="icon.png">
-  <!-- Place favicon.ico in the root directory -->
 
   <link rel="stylesheet" href="/css/normalize.css">
   <link rel="stylesheet" href="/css/main.css">
@@ -25,11 +20,9 @@
 </head>
 
 <body>
-<:body>
+<a href="/"><img id="logo" src="/img/RCB-logo.svg" alt="A colorful humanoid robot holding up an arm next to a Camelia butterfly."/></a>
 
-<script src="/js/vendor/modernizr-3.11.2.min.js"></script>
-<script src="/js/plugins.js"></script>
-<script src="/js/main.js"></script>
+<:body>
 </body>
 
 </html>

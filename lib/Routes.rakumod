@@ -17,6 +17,9 @@ sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface, OBS $ob
         resources-from %?RESOURCES;
         #templates-from-resources prefix => 'templates';
 
+        get -> "favicon.ico" {
+            resource "static/favicon.ico";
+        }
         get -> "css", *@path {
             resource "static/css", @path;
         }

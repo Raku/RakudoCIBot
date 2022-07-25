@@ -1,4 +1,5 @@
 use DB;
+use Formatters;
 
 use Cro::HTTP::Router;
 use Cro::WebApp::Template;
@@ -13,8 +14,8 @@ sub home-routes() is export {
                     id => .id,
                     project => .project,
                     commit-sha => .commit-sha // "",
-                    created-at => .creation // "",
-                    finished-at => .finished-at // "",
+                    created-at => format-dt(.creation),
+                    finished-at => format-dt(.finished-at),
                     status => .status,
                     status-indicator-class =>
                         (.status != DB::DONE ?? "in-progress" !!

@@ -6,27 +6,27 @@
 
 <table>
 <thead><tr>
-  <td>ID</td>
-  <td>Project</td>
-  <td>SHA</td>
-  <td>Start / End</td>
-  <td>Status</td>
-  <td></td>
-  <td>Link</td>
+  <th></th>
+  <th>Status</th>
+  <th>ID</th>
+  <th>Project</th>
+  <th>SHA</th>
+  <th>Start / End (UTC)</th>
+  <th>Link</th>
 </tr></thead>
 <tbody>
 
 <@.test-sets>
 <tr>
+  <td><div class="status-indicator <.status-indicator-class>"></div></td>
+  <td><.status></td>
   <td><.id></td>
   <td><.project></td>
-  <td><.commit-sha></td>
+  <td class="small-sha"><.commit-sha></td>
   <td>
     <.created-at><br/>
     <.finished-at><br/>
   </td>
-  <td><.status></td>
-  <td><div class="status-indicator <.status-indicator-class>"></div></td>
   <td><a href="<.test-set-url>">Test Set</a></td>
 </tr>
 </@>
