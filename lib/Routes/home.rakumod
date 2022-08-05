@@ -8,7 +8,7 @@ use Red::Operators:api<2>;
 sub home-routes() is export {
     route {
         get -> {
-            my %data;
+            my %data = test-sets => ();
             for DB::CITestSet.^all.sort(-*.id).head(20) {
                 %data<test-sets>.push: %(
                     id => .id,
