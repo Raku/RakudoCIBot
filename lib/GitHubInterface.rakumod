@@ -92,7 +92,7 @@ method parse-hook-request($event, %json) {
                     pr-repo    => %json<repository><name>,
                     pr-number  => %json<issue><number>,
                     user-url   => %json<comment><html_url>,
-                    author     => %json<comment><user><login>;
+                    author     => %json<comment><user><login>,
                     body       => %json<comment><body>,
                 );
             }
