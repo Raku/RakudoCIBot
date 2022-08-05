@@ -4,7 +4,7 @@ use Config;
 
 class SourceSpec {
     # A Git SHA-1 is a length 40 hex number
-    subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest /;
+    subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest | "" /;
 
     has Str $.rakudo-git-url = config.projects.rakudo.repo-url;
     has SHA1 $.rakudo-commit-sha = 'LATEST';
