@@ -363,7 +363,7 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
                     $out-commit-sha = $commit-sha;
                 }
                 else {
-                    my $branch-data = $!github-interface.get-branch($gh-project, $repo, $branch);
+                    my $branch-data = $!github-interface.get-branch(:owner($gh-project), :$repo, :$branch);
                     with $branch-data {
                         $out-url = self!make-github-url($gh-project, $repo);
                         $out-commit-sha = $branch-data<commit><sha>;
