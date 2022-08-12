@@ -33,6 +33,13 @@ method !parse-pr-state($text) {
     }
 }
 
+method !validate(%data) {
+    if %data<errors>:exists {
+        note "Error in GitHub response: " ~ %data.gist;
+    }
+    return %data;
+}
+
 method parse-hook-request($event, %json) {
     given $event {
         # This event is only called for new commits, but not PRs.
@@ -149,7 +156,7 @@ method retrieve-default-branch-commits($project, $repo, :$last-cursor) {
     my @commits;
     LOOPER: loop {
         my $limiter = ($running-cursor ?? "after: \"$running-cursor\", " !! "") ~ "first: " ~ ($last-cursor ?? $batch-count !! "1");
-        my %data = $!gh.graphql.query(q:to<EOQ>).data;
+        my %data = self!validate($!gh.graphql.query(q:to<EOQ>).data);
             {
               repository(name: "\qq[$repo]", owner: "\qq[$project]") {
                 url
@@ -217,7 +224,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
     my @prs;
     loop {
         my $limiter = $last-cursor.defined ?? "after: \"$last-cursor\", first: $batch-count" !! "last: 1";
-        my %data = $!gh.graphql.query(q:to<EOQ>).data;
+        my %data = self!validate($!gh.graphql.query(q:to<EOQ>).data);
             {
               repository(name: "\qq[$repo]", owner: "\qq[$project]") {
                 pullRequests(\qq[$limiter], orderBy: {direction: ASC, field: UPDATED_AT}) {
@@ -327,33 +334,33 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
 }
 
 method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, Str() :$id!, DateTime:D :$started-at!) {
-    my $data = $!gh.checks-runs.create($owner, $repo, :$name, :head-sha($sha), :details-url($url), :external-id($id), :started-at($started-at.Str)).data;
+    my $data = self!validate($!gh.checks-runs.create($owner, $repo, :$name, :head-sha($sha), :details-url($url), :external-id($id), :started-at($started-at.Str)).data);
     return $data<id>;
 }
 
 method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
-    $!gh.checks-runs.update($owner, $repo, $check-run-id,
+    self!validate($!gh.checks-runs.update($owner, $repo, $check-run-id,
         :$status,
         |($completed-at ?? completed-at => $completed-at.Str !! {}),
         :$conclusion
-    ).data
+    ).data)
 }
 
 method add-issue-comment(:$owner!, :$repo!, :$number!, :$body) {
-    $!gh.issues-comments.create-comment($owner, $repo, $number, :$body).data;
+    self!validate($!gh.issues-comments.create-comment($owner, $repo, $number, :$body).data);
 }
 
 method merge-pr(:$owner!, :$repo!, :$number!, :$sha) {
-    $!gh.pulls.merge($owner, $repo, $number, |($sha ?? :$sha !! ())).data;
+    self!validate($!gh.pulls.merge($owner, $repo, $number, |($sha ?? :$sha !! ())).data);
 }
 
 method can-user-merge-repo(Str :$owner!, Str :$repo!, Str :$username! --> Bool) {
-    my %data = $!gh.repos-collaborators.get-collaborator-permission-level($owner, $repo, $username).data;
+    my %data = self!validate($!gh.repos-collaborators.get-collaborator-permission-level($owner, $repo, $username).data);
     return %data<permission> ~~ ("admin" | "write");
 }
 
 method get-branch(Str :$owner!, Str :$repo!, Str :$branch!) {
-    my $res = $!gh.repos-branches.get-branch($owner, $repo, $branch).data;
+    my $res = self!validate($!gh.repos-branches.get-branch($owner, $repo, $branch).data);
     CATCH { return Nil }
     return $res
 }
