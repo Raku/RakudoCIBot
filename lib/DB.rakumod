@@ -82,6 +82,7 @@ model CITest is rw is table<citest> {
     has Bool                  $.flapper-checked       is column = False;
     has Str                   $.flapper               is column{ :nullable };
     has Str                   $.log                   is column{ :nullable, :type<text> };
+    has Str                   $.ci-url                is column{ :nullable };
 
     has UInt                  $!fk-successor          is referencing( *.id, :model(DB::CITest) );
     has CITest                $.successor             is relationship( *.fk-successor );

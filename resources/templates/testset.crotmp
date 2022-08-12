@@ -46,7 +46,7 @@
     <.finished-at><br/>
   </td>
 
-  <td><a href="<.backend-url>">CI</a></td>
+  <td><?.backend-url><a href="<.backend-url>">CI</a></?><!.backend-url>N/A</!></td>
   <td><a href="<.log-url>">Log</a></td>
 </tr>
 </@>

@@ -43,7 +43,7 @@ sub testset-routes() is export {
                             created-at => format-dt(.creation),
                             started-at => format-dt(.test-started-at),
                             finished-at => format-dt(.test-finished-at),
-                            backend-url => "todo",
+                            backend-url => .ci-url // "",
                             log-url => "/test/{.id}/log",
                         )}),
                     )}),
