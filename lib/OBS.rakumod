@@ -31,7 +31,7 @@ my %projects =
     },
 ;
 
-method new-test-set(DB::CITestSet $test-set) {
+method new-test-set(DB::CITestSet:D $test-set) {
     DB::CIPlatformTestSet.^create:
         :$test-set,
         platform => DB::OBS;
@@ -39,18 +39,19 @@ method new-test-set(DB::CITestSet $test-set) {
     self.process-worklist();
 }
 
-method re-test-test-set(DB::CITestSet $test-set) {
+method re-test-test-set(DB::CITestSet:D $test-set) {
     my $pts = DB::CIPlatformTestSet.^all.first({
         $_.platform == DB::OBS &&
         $_.test-set.id == $test-set.id
     });
-
-    $pts.status = DB::PLATFORM_IN_PROGRESS;
-    $pts.obs-started-at = Nil;
-    $pts.obs-finished-at = Nil;
-    $pts.re-test = True;
-    $pts.^save;
-    self.process-worklist();
+    if $pts {
+        $pts.status = DB::PLATFORM_IN_PROGRESS;
+        $pts.obs-started-at = Nil;
+        $pts.obs-finished-at = Nil;
+        $pts.re-test = True;
+        $pts.^save;
+        self.process-worklist();
+    }
 }
 
 method hook-call-received($pts-id) {
