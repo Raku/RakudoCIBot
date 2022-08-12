@@ -45,6 +45,7 @@
         "SerialDedup": "lib/SerialDedup.rakumod",
         "OBS": "lib/OBS.rakumod",
         "OBSInterface": "lib/OBSInterface.rakumod",
+        "TestBackend": "lib/TestBackend.rakumod",
         "Config": "lib/Config.rakumod",
         "Routes": "lib/Routes.rakumod",
         "Routes::home": "lib/Routes/home.rakumod",

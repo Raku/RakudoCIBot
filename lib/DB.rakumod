@@ -6,6 +6,7 @@ unit module DB;
 enum CIPlatformIdentifier <
     AZURE
     OBS
+    TEST_BACKEND
 >;
 
 enum CITestStatus <

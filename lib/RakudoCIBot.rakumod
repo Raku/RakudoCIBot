@@ -12,6 +12,7 @@ use GitHubCITestRequester;
 use CITestSetManager;
 use OBSInterface;
 use OBS;
+use TestBackend;
 use SourceArchiveCreator;
 use Routes;
 use DB;
@@ -24,6 +25,7 @@ has CITestSetManager $!testset-manager;
 has OBSInterface $!obs-interface;
 has OBS $!obs;
 has Promise $!running;
+has TestBackend $!test-backend;
 
 submethod TWEAK() {
     set-config($*PROGRAM.parent.add(%*ENV<CONFIG> // "config-prod.yml"));
@@ -64,17 +66,25 @@ submethod TWEAK() {
     ;
     $!requester.github-interface = $!github-interface;
     $!testset-manager.register-status-listener($!requester);
-    $!obs-interface .= new:
-        user     => config.obs-user,
-        password => config.obs-password,
-    ;
-    $!obs .= new:
-        :$!source-archive-creator,
-        work-dir => config.obs-work-dir.IO,
-        interface => $!obs-interface,
-        :$!testset-manager,
-    ;
-    $!testset-manager.register-test-set-listener($!obs);
+    if %*ENV<TEST_BACKEND> {
+        $!test-backend .= new:
+            :$!testset-manager,
+        ;
+        $!testset-manager.register-test-set-listener($!test-backend);
+    }
+    else {
+        $!obs-interface .= new:
+            user     => config.obs-user,
+            password => config.obs-password,
+        ;
+        $!obs .= new:
+            :$!source-archive-creator,
+            work-dir => config.obs-work-dir.IO,
+            interface => $!obs-interface,
+            :$!testset-manager,
+        ;
+        $!testset-manager.register-test-set-listener($!obs);
+    }
 }
 
 method start() {
@@ -91,9 +101,16 @@ method start() {
             #$!requester.poll-for-changes;
             $!requester.process-worklist;
         }
-        whenever Supply.interval(config.obs-interval) {
-            #my $*RED-DEBUG = True;
-            $!obs.process-worklist;
+        if %*ENV<TEST_BACKEND> {
+            whenever Supply.interval(5) {
+                $!test-backend.process-worklist;
+            }
+        }
+        else {
+            whenever Supply.interval(config.obs-interval) {
+                #my $*RED-DEBUG = True;
+                $!obs.process-worklist;
+            }
         }
         whenever Supply.interval(config.flapper-list-interval) {
             $!flapper-detector.refresh-flapper-list;
