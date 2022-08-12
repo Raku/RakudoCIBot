@@ -1,8 +1,6 @@
 use CITestSetListener;
 unit class OBS does CITestSetListener;
 
-use Log::Async;
-
 use DB;
 use SourceArchiveCreator;
 use OBSInterface;
