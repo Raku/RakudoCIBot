@@ -231,7 +231,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                   edges {
                     cursor
                     node {
-                      node_id
+                      id
                       author {
                         login
                       }
@@ -291,7 +291,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                     user-url     => %pull-data<url>,
                     comments     => [
                         GitHubCITestRequester::PRCommentTask.new(
-                            id         => %pull-data<node_id>,
+                            id         => %pull-data<id>,
                             created-at => %pull-data<createdAt>,
                             updated-at => %pull-data<lastEditedAt>,
                             pr-number  => %pull-data<number>,
