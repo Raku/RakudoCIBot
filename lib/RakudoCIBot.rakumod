@@ -98,7 +98,7 @@ method start() {
         }
         whenever Supply.interval(config.github-requester-interval) {
             #my $*RED-DEBUG = True;
-            #$!requester.poll-for-changes;
+            $!requester.poll-for-changes;
             $!requester.process-worklist;
         }
         if %*ENV<TEST_BACKEND> {
