@@ -294,6 +294,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                             id         => %pull-data<id>,
                             created-at => %pull-data<createdAt>,
                             updated-at => %pull-data<lastEditedAt>,
+                            pr-repo    => $repo,
                             pr-number  => %pull-data<number>,
                             user-url   => %pull-data<url>,
                             author     => %pull-data<author><login>,
