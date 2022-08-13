@@ -145,7 +145,7 @@ method !check-for-flappers() {
         }) {
             # It's not a flapper re-test.
             if $!flapper-detector.is-flapper($test.log) {
-                my $ts = $test.test-set;
+                my $ts = $test.platform-test-set.test-set;
                 for $!test-set-listeners.keys {
                     $_.re-test-test-set($ts)
                 }
