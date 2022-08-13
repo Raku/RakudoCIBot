@@ -52,33 +52,6 @@ method re-test-test-set(DB::CITestSet:D $test-set) {
     }
 }
 
-method hook-call-received($pts-id) {
-    if $pts-id > 1_000_000_000 {
-        warning "OBS: Received too large PTS id via hook. Ignoring.";
-        return;
-    }
-    my $pts = DB::CIPlatformTestSet.^load($pts-id);
-
-    if !$pts.defined ||
-            $pts.platform != DB::OBS ||
-            $_.status != DB::PLATFORM_IN_PROGRESS ||
-            !$pts.obs-started-at.defined ||
-            $pts.obs-finished-at.defined
-    {
-        warning "OBS: Received dubious hook call for PTS: " ~ $pts-id;
-        return;
-    }
-
-    without $pts.obs-hook-called-at {
-        trace "OBS: Received hook call for PTS: " ~ $pts-id;
-        $pts.obs-hook-called-at = DateTime.now;
-        $pts.^save;
-        Promise.in(config.obs-min-hook-to-build-end-duration).then: {
-            self.process-worklist;
-        }
-    }
-}
-
 method process-worklist() is serial-dedup {
     trace "OBS: Processing worklist";
     my @running-ptses = DB::CIPlatformTestSet.^all.grep({
@@ -153,9 +126,8 @@ method process-worklist() is serial-dedup {
     }
     # @running-ptses.elems == 1
     elsif DateTime.now - @running-ptses[0].obs-last-check-time >= config.obs-check-duration ||
-            @running-ptses[0].obs-hook-called-at &&
-            DateTime.now - @running-ptses[0].obs-hook-called-at >= config.config.obs-min-hook-to-build-end-duration &&
-            DateTime.now - @running-ptses[0].obs-last-check-time >= config.obs-obs-build-end-poll-interval
+            DateTime.now - @running-ptses[0].obs-started-at >= config.obs-min-run-duration &&
+            DateTime.now - @running-ptses[0].obs-last-check-time >= config.obs-build-end-poll-interval
     {
         # Still have a test set we are working on and it's time to have a look at it again.
         $running-pts = @running-ptses[0];
@@ -231,9 +203,6 @@ method process-worklist() is serial-dedup {
                     $log .= trim-trailing;
                     $log;
                 };
-
-                # There was a test we were able to process. Let's just assume it was the one we received the hook call for and reset.
-                $running-pts.obs-hook-called-at = Nil;
             }
 
             $test.^save;
@@ -263,7 +232,7 @@ method process-worklist() is serial-dedup {
                 $_.platform-test-set.id == $running-pts.id &&
                 $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS)
                 }) == 0
-                && DateTime.now - $running-pts.obs-started-at > config.obs-min-run-duration {
+                && DateTime.now - $running-pts.obs-started-at >= config.obs-min-run-duration {
             trace "OBS: TestSet finished: " ~ $running-pts.id;
             $running-pts.status = DB::PLATFORM_DONE;
             $running-pts.obs-finished-at = DateTime.now;
@@ -274,15 +243,6 @@ method process-worklist() is serial-dedup {
         }
         else {
             $running-pts.^save;
-
-            if $running-pts.obs-hook-called-at &&
-                    DateTime.now - $running-pts.obs-hook-called-at >= config.config.obs-min-hook-to-build-end-duration
-            {
-                # No test seen. Poll again soon!
-                Promise.in(config.obs-obs-build-end-poll-interval).then: {
-                    self.process-worklist
-                }
-            }
         }
     }
 

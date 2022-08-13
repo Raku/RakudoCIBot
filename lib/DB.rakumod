@@ -112,7 +112,6 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
     has DateTime $.obs-started-at      is column{ :nullable };
     has DateTime $.obs-finished-at     is column{ :nullable };
     has DateTime $.obs-last-check-time is column{ :nullable };
-    has DateTime $.obs-hook-called-at  is column{ :nullable };
 }
 
 model CITestSet is rw is table<citest_set> {

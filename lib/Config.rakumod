@@ -38,7 +38,6 @@ class Config {
 
     has $.obs-check-duration;
     has $.obs-min-run-duration;
-    has $.obs-min-hook-to-build-end-duration;
     has $.obs-build-end-poll-interval;
     has @.obs-packages;
 
@@ -81,7 +80,6 @@ class Config {
 
             obs-check-duration                 => %config<obs-check-duration>,
             obs-min-run-duration               => %config<obs-min-run-duration>,
-            obs-min-hook-to-build-end-duration => %config<obs-min-hook-to-build-end-duration>,
             obs-build-end-poll-interval        => %config<obs-build-end-poll-interval>,
             obs-packages                       => |%config<obs-packages>,
 

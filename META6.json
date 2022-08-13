@@ -53,7 +53,6 @@
         "Routes::testset": "lib/Routes/testset.rakumod",
         "Routes::source": "lib/Routes/source.rakumod",
         "Routes::GitHubHook": "lib/Routes/GitHubHook.rakumod",
-        "Routes::OBSHook": "lib/Routes/OBSHook.rakumod",
         "Formatters": "lib/Formatters.rakumod"
     },
     "resources": [

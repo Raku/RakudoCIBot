@@ -6,7 +6,6 @@ use Routes::test;
 use Routes::testset;
 use Routes::source;
 use Routes::GitHubHook;
-use Routes::OBSHook;
 use SourceArchiveCreator;
 use GitHubInterface;
 use OBS;
@@ -35,6 +34,5 @@ sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface, OBS $ob
         include testset-routes;
         include source-routes($sac);
         include github-hook-routes($github-interface);
-        include obs-hook-routes($obs);
     }
 }

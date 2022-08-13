@@ -55,7 +55,6 @@ make
 %check
 rm t/08-performance/99-misc.t
 make test
-curl -X POST <rcb_hook_url>
 
 %install
 %make_install
