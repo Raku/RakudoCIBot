@@ -296,7 +296,7 @@ method process-worklist() is serial-dedup {
                 repo => %project-and-repo<repo>,
                 name => $test.name,
                 sha => $ts.commit-sha,
-                url => config.hook-url ~ "test/" ~ $test.id,
+                url => config.hook-url ~ "testset/" ~ $ts.id,
                 id => $test.id,
                 started-at => DateTime.now,
                 status => $gh-status,
