@@ -44,7 +44,7 @@ sub testset-routes() is export {
                             started-at => format-dt(.test-started-at),
                             finished-at => format-dt(.test-finished-at),
                             backend-url => .ci-url // "",
-                            log-url => "/test/{.id}/log",
+                            log-url => .log ?? "/test/{.id}/log" !! "",
                         )}),
                     )}),
                 ;
