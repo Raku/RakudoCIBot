@@ -24,25 +24,34 @@ projects:
         slug: MoarVM/MoarVM
         install-id: 20243470
 
+hook-url: https://cibot.rakudo.org/
+
 obs-user: some_user
 obs-password: "some_pw"
 
-obs-check-duration: 300 # 5 * 60
+obs-check-duration: 30
 obs-min-run-duration: 300 # 5 * 60
+obs-build-end-poll-interval: 15
 obs-packages:
     - moarvm
     - nqp-moarvm
     - rakudo-moarvm
 
 github-check-batch-count: 15
+github-max-source-retrieval-retries: 5
 
 sac-work-dir: work/sac-work
 sac-store-dir: work/sac-store
 obs-work-dir: work/obs-work
 
+flapper-list-url: https://raw.githubusercontent.com/Raku/RakudoCIBot/main/flapper-list.yml
+
 testset-manager-interval: 300 # 5 * 60
 github-requester-interval: 300 # 5 * 60
 obs-interval: 300 # 5 * 60
+flapper-list-interval: 3600 # 60 * 60
 
 web-host: 0.0.0.0
 web-port: 10000
+
+log-level: TRACE
