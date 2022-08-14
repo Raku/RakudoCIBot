@@ -1,0 +1,23 @@
+# RCB pulls this list out of the main branch on GitHub every few minutes.
+
+- name: 03-semaphore.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/concurrency/03-semaphore.t"
+- name: 10-nqp-ops.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/02-rakudo/10-nqp-ops.t"
+- name: 99-misc.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/02-rakudo/99-misc.t"
+- name: 15-gh_1202.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/02-rakudo/15-gh_1202.t"
+- name: 03-errors.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/05-messages/03-errors.t"
+- name: return-in-tap.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/spec/S17-supply/return-in-tap.t"
+- name: repeat.t
+  matcher: |
+    "Test Summary Report" \n .+ "t/spec/S03-operators/repeat.t"
