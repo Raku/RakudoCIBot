@@ -1,0 +1,12 @@
+use Test;
+use File::Temp;
+
+use AzureInterface;
+
+my AzureInterface $interface .= new;
+
+my $data = $interface.get-pipeline-runs("rakudo");
+isa-ok $data, Hash, "Basic request gives a hash response";
+isa-ok $data<count>, Int, "There is sane data in the response";
+
+done-testing;
