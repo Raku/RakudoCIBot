@@ -21,7 +21,7 @@ my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
 
 # In memory, ephemeral DB.
 red-defaults("SQLite");
-DB::create-db();
+DB::create-schema();
 #my $*RED-DEBUG = True;
 #my $*RED-DEBUG-RESPONSE = True;
 

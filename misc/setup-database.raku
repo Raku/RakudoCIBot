@@ -11,6 +11,6 @@ sub MAIN($config) {
         config.db,
         host => config.db<host> || Str
     ));
-    DB::create-db();
+    DB::create-schema();
     say "Database schema set up.";
 }
