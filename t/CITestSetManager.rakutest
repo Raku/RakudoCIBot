@@ -15,7 +15,7 @@ logger.untapped-ok = True;
 
 # Fast, in memory, ephemeral DB.
 red-defaults("SQLite");
-DB::create-db();
+DB::create-schema();
 #my $*RED-DEBUG = True;
 
 # Disable background worklist processing. Makes the tests more reliable.
