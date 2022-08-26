@@ -5,11 +5,12 @@ use Cro::WebApp::Template;
 
 sub source-routes(SourceArchiveCreator $sac) is export {
     route {
-        get -> "source", $id {
+        get -> "source", $filename {
+            my $id = $sac.get-id-for-filename($filename);
             my $path = $sac.get-archive-path($id);
             if $path.f {
                 header "Content-Length", $path.s;
-                header "Content-Disposition", "attachment; filename=\"" ~  $id ~ ".tar.xz\"";
+                header "Content-Disposition", "attachment; filename=\"" ~  $filename ~ "\"";
                 static $path;
             }
             else {
