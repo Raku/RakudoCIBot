@@ -24,9 +24,11 @@ submethod TWEAK(:$app-id!, :$pem!) {
 }
 
 method !parse-pr-state($text) {
+    # The GraphQL API differentiates between closed and merged. The REST API does not.
+    # Thus go for the smallest common and mush together closed and merged here.
     given $text {
         when "open" | "OPEN"     { GitHubCITestRequester::PRState::PR_OPEN }
-        when "closed" | "CLOSED" { GitHubCITestRequester::PRState::PR_CLOSED }
+        when "closed" | "CLOSED" | "merged" | "MERGED" { GitHubCITestRequester::PRState::PR_CLOSED }
         default {
             die "Unknown PRState found: " ~ $_;
         }
