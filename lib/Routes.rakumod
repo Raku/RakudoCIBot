@@ -31,7 +31,7 @@ sub routes(SourceArchiveCreator $sac, GitHubInterface $github-interface, OBS $ob
 
         include home-routes;
         include test-routes;
-        include testset-routes;
+        include testset-routes($sac);
         include source-routes($sac);
         include github-hook-routes($github-interface);
     }

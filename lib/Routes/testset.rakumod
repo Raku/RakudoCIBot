@@ -5,7 +5,7 @@ use Cro::HTTP::Router;
 use Cro::WebApp::Template;
 use Red::Operators:api<2>;
 
-sub testset-routes() is export {
+sub testset-routes($sac) is export {
     route {
         get -> "testset", UInt $id {
             with DB::CITestSet.^load($id) {
@@ -26,7 +26,7 @@ sub testset-routes() is export {
                     nqp-commit-sha => .source-spec.nqp-commit-sha,
                     moar-git-url => .source-spec.moar-git-url,
                     moar-commit-sha => .source-spec.moar-commit-sha,
-                    source-link => (.source-archive-id ?? "/source/" ~ .source-archive-id !! ""),
+                    source-url => (.source-archive-id ?? "/source/" ~ $sac.get-filename(.source-archive-id) !! ""),
                     backends => .platform-test-sets.Seq.map({%(
                         name => do given .platform {
                             when DB::AZURE { "Azure CI" }

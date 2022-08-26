@@ -77,6 +77,8 @@ size                      6.3 MB
 We'll go with xz for now.
 ]
 
+constant $ext = '.tar.xz';
+
 has IO::Path $.work-dir  is required where *.d;
 has IO::Path $.store-dir is required where *.d;
 has $!rakudo-dir = $!work-dir.add('rakudo');
@@ -210,7 +212,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
         "-f", $filepath-moar ~ ".tar",
         $!moar-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-moar ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    run("rm", $filepath-moar ~ $ext, :cwd($!work-dir), :merge).so;
     validate run qw|xz -9|, $filepath-moar ~ ".tar", :cwd($!work-dir), :merge;
 
     my $filepath-nqp = $filepath-base ~ '-nqp';
@@ -220,7 +222,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
         "-f", $filepath-nqp ~ ".tar",
         $!nqp-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-nqp ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    run("rm", $filepath-nqp ~ $ext, :cwd($!work-dir), :merge).so;
     validate run qw|xz -9|, $filepath-nqp ~ ".tar", :cwd($!work-dir), :merge;
 
     my $filepath-rakudo = $filepath-base ~ '-rakudo';
@@ -230,16 +232,19 @@ method create-archive(SourceSpec $source-spec --> Str) {
         "-f", $filepath-rakudo ~ ".tar",
         $!rakudo-dir.relative($!work-dir),
         :cwd($!work-dir), :merge;
-    run("rm", $filepath-rakudo ~ ".tar.xz", :cwd($!work-dir), :merge).so;
+    run("rm", $filepath-rakudo ~ $ext, :cwd($!work-dir), :merge).so;
     validate run qw|xz -9|, $filepath-rakudo ~ ".tar", :cwd($!work-dir), :merge;
 
 
     return $id;
 }
 
-multi method get-archive-path($id           --> IO::Path) { self!get-path-for-name: $id ~ '.tar.xz' }
-multi method get-archive-path($id, 'moar'   --> IO::Path) { self!get-path-for-name: $id ~ '-moar.tar.xz' }
-multi method get-archive-path($id, 'nqp'    --> IO::Path) { self!get-path-for-name: $id ~ '-nqp.tar.xz' }
-multi method get-archive-path($id, 'rakudo' --> IO::Path) { self!get-path-for-name: $id ~ '-rakudo.tar.xz' }
+method get-id-for-filename($filename --> Str) { $filename.substr(/ $ext $ /, '') }
+method get-filename($id --> Str) { $id ~ $ext }
+
+multi method get-archive-path($id           --> IO::Path) { self!get-path-for-name: $id ~ $ext }
+multi method get-archive-path($id, 'moar'   --> IO::Path) { self!get-path-for-name: $id ~ '-moar' ~ $ext }
+multi method get-archive-path($id, 'nqp'    --> IO::Path) { self!get-path-for-name: $id ~ '-nqp' ~ $ext }
+multi method get-archive-path($id, 'rakudo' --> IO::Path) { self!get-path-for-name: $id ~ '-rakudo' ~ $ext }
 
 }

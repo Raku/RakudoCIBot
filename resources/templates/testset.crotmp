@@ -7,7 +7,7 @@
     <li>Created at: <.created-at>
     <li>Project: <.project>
     <li>Commit: <a href="<.user-url>"><.commit-sha></a>
-    <li><a href="<.source-link>">Source archive</a>
+    <li><a href="<.source-url>">Source archive</a>
     <li>Status: <.status>
     <?.error><li>Error: <.error></?>
   </ul></div>
