@@ -35,17 +35,18 @@ submethod TWEAK() {
 
 method !create-req-uri($fragment) {
     # TODO put this in Config
-    return 'https://dev.azure.com/patrickboeker/Precomp-Builds/_apis/' ~ $fragment ~ '?api-version=7.1-preview.1';
+    my $api-sep = $fragment.contains('?') ?? '&' !! '?';
+    return 'https://dev.azure.com/patrickboeker/Precomp-Builds/_apis/' ~ $fragment ~ $api-sep ~ 'api-version=7.1-preview.1';
 }
 
-method !req($method, $url-path, :$body-data, :%form-data) {
+method !req($method, $url-path, :$body-blob, :%body-data) {
     say self!create-req-uri($url-path);
     my $res;
-    if $body-data {
-        $res = await $!cro.request: $method, self!create-req-uri($url-path), body => $body-data;
+    if $body-blob {
+        $res = await $!cro.request: $method, self!create-req-uri($url-path), body => $body-blob;
     }
-    elsif %form-data {
-        $res = await $!cro.request: $method, self!create-req-uri($url-path), content-type => 'application/x-www-form-urlencoded', body => %form-data;
+    elsif %body-data {
+        $res = await $!cro.request: $method, self!create-req-uri($url-path), content-type => 'application/json', body => %body-data;
     }
     else {
         $res = await $!cro.request: $method, self!create-req-uri($url-path);
@@ -71,3 +72,14 @@ method get-pipeline-runs($project) {
     self!req: 'GET', 'pipelines/' ~ self!proj-to-pipeline($project) ~ '/runs';
 }
 
+method run-pipeline($source-url, $project) {
+    my $data = self!req: 'POST', 'pipelines/' ~ self!proj-to-pipeline($project) ~ '/runs', body-data => {
+        variables => {
+            SOURCES_URL => {
+                :!is_secret,
+                value => $source-url,
+            }
+        },
+    };
+    return $data<id>;
+}
