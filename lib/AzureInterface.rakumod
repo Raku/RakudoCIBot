@@ -7,6 +7,7 @@ use Base64;
 unit class AzureInterface;
 
 has Cro::HTTP::Client $!cro;
+has Cro::HTTP::Client $!cro-log;
 
 #TODO put into the configuration.
 #TODO Invalidates on 18.8.2022, maybe change to OAuth?
@@ -31,16 +32,19 @@ submethod TWEAK() {
         tls => {
             ssl-key-log-file => 'ssl-key-log-file',
         };
+    $!cro-log .= new:
+        headers => [
+            Accept => 'text/plain',
+        ];
 }
 
 method !create-req-uri($fragment) {
     # TODO put this in Config
     my $api-sep = $fragment.contains('?') ?? '&' !! '?';
-    return 'https://dev.azure.com/patrickboeker/Precomp-Builds/_apis/' ~ $fragment ~ $api-sep ~ 'api-version=7.1-preview.1';
+    return 'https://dev.azure.com/patrickboeker/Precomp-Builds/_apis/' ~ $fragment ~ $api-sep ~ 'api-version=7.0';
 }
 
 method !req($method, $url-path, :$body-blob, :%body-data) {
-    say self!create-req-uri($url-path);
     my $res;
     if $body-blob {
         $res = await $!cro.request: $method, self!create-req-uri($url-path), body => $body-blob;
@@ -53,7 +57,7 @@ method !req($method, $url-path, :$body-blob, :%body-data) {
     }
     CATCH {
         when X::Cro::HTTP::Error {
-                die "HTTP request failed: $method " ~ self!create-req-uri($url-path) ~ " " ~ $_;
+            die "HTTP request failed: $method " ~ self!create-req-uri($url-path) ~ " " ~ $_;
         }
     }
     return await $res.body;
@@ -81,5 +85,47 @@ method run-pipeline($source-url, $project) {
             }
         },
     };
-    return $data<id>;
+    return $data<id>.Int;
+}
+
+enum Result <abandoned canceled failed skipped succeeded succeededWithIssues>;
+enum State <completed inProgress pending>;
+
+class Job {
+    has $.id;
+    has $.name;
+    has $.start-time;
+    has $.finish-time;
+    has $.state;
+    has $.result;
+    has $.log-url;
+}
+
+method get-run-data($run-id) {
+    #https://docs.microsoft.com/en-us/rest/api/azure/devops/build/timeline/get?view=azure-devops-rest-7.1
+    # The following call (without a trailing timelineId is undocumented, but seems to be the only
+    # way to reach the individual Jobs of a run.
+    my $data = self!req: 'GET', 'build/builds/' ~ $run-id ~ '/timeline';
+    my @jobs = $data<records><>.grep(*<type> eq "Job");
+    @jobs .= map: {
+        Job.new:
+            id => $_<id>,
+            name => $_<name>,
+            start-time => $_<startTime>,
+            finish-time => $_<finishTime>,
+            state => State::{$_<state>},
+            result => Result::{$_<result>},
+            log-url => $_<log><url>,
+    };
+    return @jobs;
+}
+
+method get-log($job) {
+    CATCH {
+        when X::Cro::HTTP::Error {
+            die "Retrieving log failed: " ~ $_<log><url> ~ " " ~ $_;
+        }
+    }
+    my $log-req = await $!cro-log.get: $job.log-url;
+    return await $log-req.body;
 }

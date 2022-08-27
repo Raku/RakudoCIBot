@@ -11,8 +11,10 @@ my $data;
 #isa-ok $data, Hash, "Basic request gives a hash response";
 #isa-ok $data<count>, Int, "There is sane data in the response";
 
-$data = $interface.run-pipeline("https://whoop-rcb.site/source/E779AA7C34AF1F249BDEAD0082172D0AF6EBE75C_E3C43999121D67C34662A0361D28EE5A45557175_C315523ABAAC6D8071572AECCF1FFAD61DBE88DD", "rakudo");
-isa-ok $data, Hash, "Basic request gives a hash response";
-# Hash $data = ${:_links(${:pipeline(${:href("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_apis/pipelines/4?revision=3")}), "pipeline.web" => ${:href("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_build/definition?definitionId=4")}, :self(${:href("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_apis/pipelines/4/runs/138")}), :web(${:href("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_build/results?buildId=138")})}), :createdDate("2022-08-26T21:02:56.5554317Z"), :id(138), :name("20220826.7"), :pipeline(${:folder("\\"), :id(4), :name("patrickbkr.rcb-azure-dummy"), :revision(3), :url("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_apis/pipelines/4?revision=3")}), :resources(${:repositories(${:self(${:refName("refs/heads/main"), :repository(${:connection(${:id("f9209cdc-5033-4540-adbf-1ca5f51b157b")}), :fullName("patrickbkr/rcb-azure-dummy"), :type("gitHub")}), :version("b8d3ebfad8b83b5e4b9cd677194e49070ff0ed99")})})}), :state("inProgress"), :url("https://dev.azure.com/patrickboeker/fe0d6974-1c4c-4adf-854e-32861c991b8e/_apis/pipelines/4/runs/138"), :variables(${:SOURCES_URL(${:value("https://whoop-rcb.site/source/E779AA7C34AF1F249BDEAD0082172D0AF6EBE75C_E3C43999121D67C34662A0361D28EE5A45557175_C315523ABAAC6D8071572AECCF1FFAD61DBE88DD")})})}
+#$data = $interface.run-pipeline("https://whoop-rcb.site/source/E779AA7C34AF1F249BDEAD0082172D0AF6EBE75C_E3C43999121D67C34662A0361D28EE5A45557175_C315523ABAAC6D8071572AECCF1FFAD61DBE88DD", "rakudo");
+#isa-ok $data, Int, "Pipeline creation returns an ID";
+
+$data = $interface.get-run-data(138);
+isa-ok $data[0], AzureInterface::Job, "Run data request returns Job objects";
 
 done-testing;
