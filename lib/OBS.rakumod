@@ -43,7 +43,7 @@ method re-test-test-set(DB::CITestSet:D $test-set) {
         $_.test-set.id == $test-set.id
     });
     if $pts {
-        $pts.status = DB::PLATFORM_IN_PROGRESS;
+        $pts.status = DB::PLATFORM_NOT_STARTED;
         $pts.obs-started-at = Nil;
         $pts.obs-finished-at = Nil;
         $pts.re-test = True;
@@ -56,9 +56,7 @@ method process-worklist() is serial-dedup {
     trace "OBS: Processing worklist";
     my @running-ptses = DB::CIPlatformTestSet.^all.grep({
         $_.platform == DB::OBS &&
-        $_.status == DB::PLATFORM_IN_PROGRESS &&
-        $_.obs-started-at.defined &&
-        !$_.obs-finished-at.defined });
+        $_.status == DB::PLATFORM_IN_PROGRESS });
 
     my DB::CIPlatformTestSet $running-pts;
 
@@ -70,10 +68,11 @@ method process-worklist() is serial-dedup {
         # No in progress test set found. Let's see if we can start a new one.
         with DB::CIPlatformTestSet.^all.first({
                 $_.platform == DB::OBS &&
-                $_.status == DB::PLATFORM_IN_PROGRESS &&
-                !$_.obs-started-at.defined }) {
+                $_.status == DB::PLATFORM_NOT_STARTED }) {
             $running-pts = $_;
             trace "OBS: Starting new run: " ~ $running-pts.id;
+
+            $running-pts.status = DB::PLATFORM_IN_PROGRESS;
 
             if $running-pts.re-test {
                 # It's a re-test. So only run tests that have failed.
