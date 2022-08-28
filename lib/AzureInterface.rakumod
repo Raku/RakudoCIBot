@@ -63,11 +63,11 @@ method !req($method, $url-path, :$body-blob, :%body-data) {
     return await $res.body;
 }
 
-method !proj-to-pipeline(Str:D $proj) {
+method !proj-to-pipeline(DB::Project $proj) {
     given $proj {
-        when 'rakudo' { return $rakudo-pipeline }
-        when 'nqp'    { return $nqp-pipeline }
-        when 'moar'   { return $moar-pipeline }
+        when DB::RAKUDO { return $rakudo-pipeline }
+        when DB::NQP    { return $nqp-pipeline }
+        when DB::MOAR   { return $moar-pipeline }
         default       { die "Unknown project given: " ~ $proj }
     }
 }

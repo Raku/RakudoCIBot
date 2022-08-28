@@ -1,17 +1,18 @@
 use Test;
 use File::Temp;
 
+use DB;
 use AzureInterface;
 
 my AzureInterface $interface .= new;
 
 my $data;
 
-#$data = $interface.get-pipeline-runs("rakudo");
+#$data = $interface.get-pipeline-runs(DB::RAKUDO);
 #isa-ok $data, Hash, "Basic request gives a hash response";
 #isa-ok $data<count>, Int, "There is sane data in the response";
 
-#$data = $interface.run-pipeline("https://whoop-rcb.site/source/E779AA7C34AF1F249BDEAD0082172D0AF6EBE75C_E3C43999121D67C34662A0361D28EE5A45557175_C315523ABAAC6D8071572AECCF1FFAD61DBE88DD", "rakudo");
+#$data = $interface.run-pipeline("https://whoop-rcb.site/source/E779AA7C34AF1F249BDEAD0082172D0AF6EBE75C_E3C43999121D67C34662A0361D28EE5A45557175_C315523ABAAC6D8071572AECCF1FFAD61DBE88DD", DB::RAKUDO);
 #isa-ok $data, Int, "Pipeline creation returns an ID";
 
 $data = $interface.get-run-data(138);
