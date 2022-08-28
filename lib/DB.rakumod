@@ -19,6 +19,7 @@ enum CITestStatus <
 >;
 
 enum CIPlatformTestSetStatus <
+    PLATFORM_NOT_STARTED
     PLATFORM_IN_PROGRESS
     PLATFORM_DONE
 >;
@@ -101,7 +102,7 @@ model CIPlatformTestSet is rw is table<ciplatform_test_set> {
     has DateTime            $.creation     is column .= now;
 
     has DB::CIPlatformIdentifier    $.platform  is column{ :nullable };
-    has DB::CIPlatformTestSetStatus $.status      is column = DB::PLATFORM_IN_PROGRESS;
+    has DB::CIPlatformTestSetStatus $.status      is column = DB::PLATFORM_NOT_STARTED;
     has Bool                        $.re-test     is column = False;
     has UInt                        $!fk-test-set is referencing( *.id, :model(DB::CITestSet) );
     has DB::CITestSet               $.test-set    is relationship( *.fk-test-set );
