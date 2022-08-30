@@ -12,7 +12,7 @@ has Cro::HTTP::Client $!cro-log;
 #TODO put into the configuration.
 #TODO Invalidates on 18.8.2022, maybe change to OAuth?
 constant $pat = 'nfq2ua64vjfimvrchh7rtzurfiutep5wmmkqftojz6fgxqeyfboq';
-constant $rakudo-pipeline = 1;
+constant $rakudo-pipeline = 4;
 constant $nqp-pipeline = 2;
 constant $moar-pipeline = 3;
 has $!auth-str;
@@ -129,3 +129,15 @@ method get-log($job) {
     my $log-req = await $!cro-log.get: $job.log-url;
     return await $log-req.body;
 }
+
+method re-test($project, $run-id) {
+    ...
+}
+
+#OAuth
+#https://aex.dev.azure.com/app/register/
+#https://docs.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/oauth?view=azure-devops
+
+#download artifacts
+#GET https://dev.azure.com/{organization}/{project}/_apis/build/builds/{buildId}/artifacts?api-version=6.0
+
