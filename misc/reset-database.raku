@@ -12,11 +12,11 @@ sub MAIN($config) {
         host => config.db<host> || Str
     ));
 
+    DB::Command.^delete;
     DB::CITest.^delete;
     DB::CIPlatformTestSet.^delete;
     DB::CITestSet.^delete;
     DB::GitHubPR.^delete;
-    DB::Command.^delete;
     DB::GitHubPullState.^delete;
 
     #`[
