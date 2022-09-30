@@ -67,3 +67,11 @@ table .small-sha {
 .status-indicator.failure {
     background-color: red;
 }
+
+/*
+ * Superseded indicator ================
+ */
+.superseded {
+    color: grey;
+}
+

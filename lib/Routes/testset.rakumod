@@ -9,6 +9,24 @@ sub testset-routes($sac) is export {
     route {
         get -> "testset", UInt $id {
             with DB::CITestSet.^load($id) {
+                sub order-tests(@tests) {
+                    my @ordered = @tests.grep(!*.obs-before-re-test);
+                    my @superseded = @tests.grep(*.obs-before-re-test);
+                    @ordered.map: {
+                        my @a = $_;
+                        my $a-size = @a.elems;
+                        repeat {
+                            for @superseded -> $s {
+                                say $s.successor.id if $s.successor;
+                                if $s.successor && $s.successor.id == @a[*-1].id {
+                                    @a.push: $s;
+                                    last;
+                                }
+                            }
+                        } while @a.elems > $a-size++;
+                        |@a;
+                    };
+                }
                 my %data =
                     id => .id,
                     created-at => .creation,
@@ -32,7 +50,10 @@ sub testset-routes($sac) is export {
                             when DB::AZURE { "Azure CI" }
                             when DB::OBS   { "OBS" }
                         },
-                        tests => .tests.Seq.map({%(
+                        id => .id,
+                        tests => order-tests(.tests.Seq).map({%(
+                            id => .id,
+                            superseded-class => .obs-before-re-test ?? "superseded" !! "",
                             status-indicator-class =>
                                 .status == DB::SUCCESS ?? "success" !!
                                 .status == DB::IN_PROGRESS ?? "in-progress" !!

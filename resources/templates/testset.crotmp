@@ -23,9 +23,10 @@
 
 <h1>Tests</h1>
 <@.backends>
-<h2><.name></h2>
+<h2><.name> <.id></h2>
 <table>
 <thead><tr>
+  <td>ID</td>
   <td></td>
   <td>Status</td>
   <td>Name</td>
@@ -35,7 +36,8 @@
 </tr></thead>
 <tbody>
 <@.tests>
-<tr>
+<tr class="<.superseded-class>">
+  <td><.id></td>
   <td><div class="status-indicator <.status-indicator-class>"></div></td>
   <td><.status></td>
   <td><.name></td>
