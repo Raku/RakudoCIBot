@@ -79,17 +79,18 @@ method process-worklist() is serial-dedup {
                 # I.e. disable all succeeded tests.
 
                 for DB::CITest.^all.grep({
-                        $_.platform-test-set.id == $running-pts.id &&
-                        $_.status == DB::SUCCESS
+                        $_.platform-test-set.id == $running-pts.id
                 }) -> $test {
-                    $test.obs-before-re-test = True;
-                    $test.^save;
                     if $test.status == DB::SUCCESS {
                         for %projects.keys -> $project {
                             my $package = %projects{$project}<package>;
                             $!interface.set-test-disabled($package, $test.obs-arch, $test.obs-repository);
                         }
                     }
+                    else {
+                        $test.obs-before-re-test = True;
+                    }
+                    $test.^save;
                 }
             }
             else {
