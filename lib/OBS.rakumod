@@ -156,6 +156,11 @@ method process-worklist() is serial-dedup {
         });
 
         for $!interface.builds() -> $build {
+            if $build.status.values.grep(* eq "disabled") {
+                # It's a disabled test. Usually a re-test run and the test hadn't failed and is thus not tested again.
+                next;
+            }
+
             my $test-name = $build.arch ~ "-" ~ $build.repository;
 
             my $status = $build.state eq "building"                       ?? DB::IN_PROGRESS !!
