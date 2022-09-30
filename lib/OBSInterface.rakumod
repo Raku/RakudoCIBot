@@ -88,7 +88,7 @@ class OBSResult {
     has %.status;
 }
 method builds($package?) {
-    my $dom = self!req-dom: 'GET', "/build/$!project/_result" ~ ($package ?? "package=$package" !! "");
+    my $dom = self!req-dom: 'GET', "/build/$!project/_result" ~ ($package ?? "?package=$package" !! "");
     my @results;
     for $dom.findnodes("/resultlist/result") -> $res {
         @results.push: OBSResult.new(
