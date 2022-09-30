@@ -153,9 +153,16 @@ method set-test-disabled($package, $arch, $repository) {
 }
 
 method enable-all-tests($package) {
-    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
-        flag => "build",
-        status => "enable",
-    };
+    my @builds = self.builds();
+    for @builds -> $b {
+        if $b.code eq "disabled" {
+            self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
+                flag => "build",
+                status => "enable",
+                repository => $b.repository,
+                arch => $b.arch,
+            };
+        }
+    }
 }
 
