@@ -10,8 +10,8 @@ sub testset-routes($sac) is export {
         get -> "testset", UInt $id {
             with DB::CITestSet.^load($id) {
                 sub order-tests(@tests) {
-                    my @ordered = @tests.grep(!*.obs-before-re-test);
-                    my @superseded = @tests.grep(*.obs-before-re-test);
+                    my @ordered = @tests.grep(!*.superseded);
+                    my @superseded = @tests.grep(*.superseded);
                     @ordered.map: {
                         my @a = $_;
                         my $a-size = @a.elems;
@@ -53,7 +53,7 @@ sub testset-routes($sac) is export {
                         id => .id,
                         tests => order-tests(.tests.Seq).map({%(
                             id => .id,
-                            superseded-class => .obs-before-re-test ?? "superseded" !! "",
+                            superseded-class => .superseded ?? "superseded" !! "",
                             status-indicator-class =>
                                 .status == DB::SUCCESS ?? "success" !!
                                 .status == DB::IN_PROGRESS ?? "in-progress" !!

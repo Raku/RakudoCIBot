@@ -90,7 +90,7 @@ model CITest is rw is table<citest> {
 
     has Str                   $.obs-arch              is column{ :nullable };
     has Str                   $.obs-repository        is column{ :nullable };
-    has Bool                  $.obs-before-re-test    is column = False;
+    has Bool                  $.superseded            is column = False;
 
     # Responsibility of the GitHubCITestRequester
     has Str(Int)              $.github-id             is column{ :nullable };
