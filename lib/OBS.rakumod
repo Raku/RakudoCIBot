@@ -89,8 +89,8 @@ method process-worklist() is serial-dedup {
                     }
                     else {
                         $test.superseded = True;
+                        $test.^save;
                     }
-                    $test.^save;
                 }
             }
             else {

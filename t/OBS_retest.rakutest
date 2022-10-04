@@ -1,0 +1,215 @@
+use Test;
+use Test::Mock;
+use File::Temp;
+use Log::Async;
+
+use Config;
+use CITestSetManager;
+use OBSInterface;
+use SourceArchiveCreator;
+use OBS;
+use DB;
+use Red:api<2>;
+
+set-config($*PROGRAM.parent.add("data/config-test.yml"));
+logger.untapped-ok = True;
+
+my $work-dir = (%*ENV<RCI_TEST_WORK_DIR> // tempdir()).IO;
+
+# Fast, in memory, ephemeral DB.
+red-defaults("SQLite");
+DB::create-schema();
+#my $*RED-DEBUG = True;
+#my $*RED-DEBUG-RESPONSE = True;
+
+# Disable background worklist processing. Makes the tests reproducible.
+my $*SERIAL_DEDUP_NO_THREADING = True;
+
+### Mocks
+
+my $dummy-path = "/some/path";
+my $dummy-log = "Build Succeeded! Yay!";
+my $archive-id = "hieapu";
+
+my $source-archive-creator = mocked(SourceArchiveCreator,
+    returning => {
+        get-archive-path => $dummy-path,
+    }
+);
+
+my $obs-interface = mocked(OBSInterface,
+    returning => {
+        build-log => $dummy-log,
+        sources => (
+            OBSInterface::OBSSource.new(
+                name  => "PTS-ID-1",
+                md5   => "132c30c59034d993b3252795d6eb1824",
+                size  => 256790,
+                mtime => 1609676194,
+            ),
+        )
+    },
+    computing => {
+        builds => {
+            state $c = -1; $c++;
+            $c == 0 ?? (
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "x86_64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "building",
+                                    nqp-moarvm    => "building",
+                                    rakudo-moarvm => "building" }),
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "arm64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "building",
+                                    nqp-moarvm    => "building",
+                                    rakudo-moarvm => "building" }),
+            )
+            !! $c == 1 ?? (
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "x86_64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "succeeded",
+                                    nqp-moarvm    => "succeeded",
+                                    rakudo-moarvm => "succeeded" }),
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "arm64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "succeeded",
+                                    nqp-moarvm    => "succeeded",
+                                    rakudo-moarvm => "failed" }),
+            )
+            !! $c == 2 ?? (
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "x86_64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "disabled",
+                                    nqp-moarvm    => "disabled",
+                                    rakudo-moarvm => "disabled" }),
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "arm64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "building",
+                                    nqp-moarvm    => "building",
+                                    rakudo-moarvm => "building" }),
+            )
+            !! (
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "x86_64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "disabled",
+                                    nqp-moarvm    => "disabled",
+                                    rakudo-moarvm => "disabled" }),
+                OBSInterface::OBSResult.new(
+                    project    => "home:patrickbkr:raku-ci",
+                    repository => "openSUSE_Leap_15.3",
+                    arch       => "arm64",
+                    code       => "published",
+                    state      => "published",
+                    status     => { moarvm        => "succeeded",
+                                    nqp-moarvm    => "succeeded",
+                                    rakudo-moarvm => "succeeded" }),
+            )
+        }
+    },
+);
+my $testset-manager = mocked(CITestSetManager);
+my OBS $obs .= new:
+    :$testset-manager,
+    interface => $obs-interface,
+    :$source-archive-creator,
+    :$work-dir;
+
+### Testing starts here
+my $testset = DB::CITestSet.^create:
+    event-type        => DB::MAIN_BRANCH,
+    project           => DB::RAKUDO,
+    git-url           => "https://github.com/rakudo/rakudo.git",
+    commit-sha        => '0123456789012345678901234567890123456789',
+    user-url          => "https://github.com/rakudo/rakudo/commit/0123456789012345678901234567890123456789",
+    source-archive-id => $archive-id,
+;
+
+$obs.new-test-set($testset);
+
+# After adding a new test, the build should be initiated.
+check-mock($obs-interface,
+    *.called("enable-all-tests", :3times),
+    *.called("upload-file", with => :("moarvm", $, *%), :3times),
+    *.called("commit", with => :("moarvm")),
+    *.called("upload-file", with => :("nqp-moarvm", $, *%), :3times),
+    *.called("commit", with => :("nqp-moarvm")),
+    *.called("upload-file", with => :("rakudo-moarvm", $, *%), :3times),
+    *.called("commit", with => :("rakudo-moarvm")),
+    *.called("builds", :1times),
+);
+
+is DB::CITest.^all.elems, 2, "CITests were created";
+is DB::CITest.^all.grep({ $_.status == DB::IN_PROGRESS}).elems, 2, "CITests have right status";
+check-mock($testset-manager,
+    *.never-called("platform-test-set-done"),
+    *.called("add-tests", :2times),
+);
+
+# Second run, now both are done, one failed.
+$obs.process-worklist();
+
+is DB::CITest.^all.grep({ $_.status == DB::FAILURE }).elems, 1, "CITests are updated (one failing)";
+is DB::CITest.^all.grep({ $_.status == DB::SUCCESS }).elems, 1, "CITests are updated (one succeeding)";
+ok DB::CITest.^all.first({ $_.status == DB::SUCCESS }).log.contains($dummy-log), "Logs are written";
+check-mock($testset-manager,
+    *.called("platform-test-set-done", :1times),
+    *.called("test-status-updated", :2times),
+);
+
+# Trigger a re-test.
+$obs.re-test-test-set($testset);
+
+# Should disable one test and run the other.
+check-mock($obs-interface,
+    *.called("set-test-disabled", :3times),
+    *.called("upload-file", with => :("moarvm", $, *%), :6times),
+    *.called("commit", with => :("moarvm"), :2times),
+    *.called("upload-file", with => :("nqp-moarvm", $, *%), :6times),
+    *.called("commit", with => :("nqp-moarvm"), :2times),
+    *.called("upload-file", with => :("rakudo-moarvm", $, *%), :6times),
+    *.called("commit", with => :("rakudo-moarvm"), :2times),
+);
+
+is DB::CITest.^all.elems, 3, "Right number of tests was created";
+is DB::CITest.^all.grep({ $_.status == DB::IN_PROGRESS }).elems, 1, "CITest has right status";
+is DB::CITest.^all.grep({ $_.superseded }).elems, 1, "One test was marked as superseded";
+
+# Third run, now all builds have finished.
+$obs.process-worklist();
+is DB::CITest.^all.elems, 3, "All CITests are finished";
+is DB::CITest.^all.grep({ $_.status == DB::SUCCESS }).elems, 2, "All CITests are finished";
+check-mock($testset-manager,
+    *.called("platform-test-set-done", :2times),
+    *.called("test-status-updated", :3times),
+);
+
+done-testing;
+
