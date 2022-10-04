@@ -339,9 +339,9 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
     my $did-things = False;
     with $pr {
         my %head-data = self!github-url-to-project-repo($pr.head-url);
-        if $project == DB::RAKUDO    && %head-data<repo>.lc eq config.projects.rakudo.repo ||
-                $project == DB::NQP  && %head-data<repo>.lc eq config.projects.nqp.repo ||
-                $project == DB::MOAR && %head-data<repo>.lc eq config.projects.moar.repo {
+        if $project == DB::RAKUDO    && %head-data<repo> eq config.projects.rakudo.repo ||
+                $project == DB::NQP  && %head-data<repo> eq config.projects.nqp.repo ||
+                $project == DB::MOAR && %head-data<repo> eq config.projects.moar.repo {
             my $uses-core-repos = %head-data<slug> eq ($project == DB::RAKUDO ?? config.projects.rakudo.slug !!
                                                        $project == DB::NQP    ?? config.projects.nqp.slug !!
                                                        $project == DB::MOAR   ?? config.projects.moar.slug !!
