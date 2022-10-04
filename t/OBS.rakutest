@@ -135,6 +135,7 @@ $obs.new-test-set($testset);
 
 # After adding a new test, the build should be initiated.
 check-mock($obs-interface,
+    *.called("enable-all-tests", :3times),
     *.called("upload-file", with => :("moarvm", $, *%), :3times),
     *.called("commit", with => :("moarvm")),
     *.called("upload-file", with => :("nqp-moarvm", $, *%), :3times),
