@@ -1,0 +1,17 @@
+[Unit]
+Description=Rakudo CI Bot
+Requires=postgresql.service
+After=network.target postgresql.service
+
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/home/rcb/repos/RakudoCIBot/run.sh
+User=rcb
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
