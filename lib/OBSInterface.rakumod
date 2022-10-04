@@ -153,9 +153,17 @@ method set-test-disabled($package, $arch, $repository) {
 }
 
 method enable-all-tests($package) {
+    #`[
+    # This simpler implementation seems to have no effect on OBS.
+    # So we'll have to go with the more complex approach below.
+    self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
+        flag => "build",
+        status => "enable",
+    };
+    ]
     my @builds = self.builds();
     for @builds -> $b {
-        if $b.code eq "disabled" {
+        if $b.status{$package} eq "disabled" {
             self!req-plain: 'POST', "/source/$!project/$package?cmd=set_flag", form-data => {
                 flag => "build",
                 status => "enable",

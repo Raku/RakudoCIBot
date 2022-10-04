@@ -15,8 +15,10 @@ my OBSInterface $interface .= new:
 
 isa-ok $interface.server-revision, Str, "Basic request works";
 
-ok $interface.upload-file('rakudo-moarvm','test.file', blob => "Some content."), "Upload request";
+#ok $interface.upload-file('rakudo-moarvm','test.file', blob => "Some content."), "Upload request";
 
-ok $interface.commit('rakudo-moarvm','some-rev'), "Commit request";
+#ok $interface.commit('rakudo-moarvm','some-rev'), "Commit request";
+
+ok $interface.enable-all-tests('nqp-moarvm'), "enable-all-tests request";
 
 done-testing;
