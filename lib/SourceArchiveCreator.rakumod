@@ -138,7 +138,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
                 :cwd($repo-dir), :merge;
 
             # TODO no hard coded master branch.
-            my $to-use = $commit eq 'LATEST' ?? 'origin/master' !! $commit;
+            my $to-use = $commit eq 'LATEST' ?? 'foobar/master' !! $commit;
 
             validate run qw|git reset --hard|, $to-use,
                 :cwd($repo-dir), :merge;
