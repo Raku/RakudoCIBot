@@ -49,7 +49,12 @@ method !req-plain($method, $url-path, :$body-data, :%form-data) {
     }
     CATCH {
         when X::Cro::HTTP::Error {
-                die "HTTP request failed: $method $!apiurl$url-path " ~ $_;
+            warn "Hit the X::Cro::HTTP::Error: HTTP request failed: $method $!apiurl$url-path " ~ $_;
+            die "HTTP request failed: $method $!apiurl$url-path " ~ $_;
+        }
+        default {
+            warn "Hit some other exception: $method $!apiurl$url-path " ~ $_;
+            die "Hit some other exceptionX: $method $!apiurl$url-path " ~ $_;
         }
     }
     return await $res.body;
