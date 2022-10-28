@@ -163,11 +163,11 @@ method process-worklist() is serial-dedup {
 
             my $test-name = $build.arch ~ "-" ~ $build.repository;
 
-            my $status = $build.state eq "building"                       ?? DB::IN_PROGRESS !!
-                         $build.status.values.grep( * eq "failed")        ?? DB::FAILURE !!
-                         $build.status.values.grep( * eq "building")      ?? DB::IN_PROGRESS !!
-                         [&&] $build.status.values.map( * eq "succeeded") ?? DB::SUCCESS !!
-                         DB::UNKNOWN;
+            my $status = $build.state eq "building"                         ?? DB::IN_PROGRESS !!
+                         $build.status.values.grep( * eq "failed")          ?? DB::FAILURE !!
+                         $build.status.values.grep( * eq "building")        ?? DB::IN_PROGRESS !!
+                         ([&&] $build.status.values.map( * eq "succeeded")) ?? DB::SUCCESS !!
+                                                                               DB::UNKNOWN;
 
             my $test-is-new = False;
             my $test =
