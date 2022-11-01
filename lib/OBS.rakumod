@@ -213,7 +213,7 @@ method process-worklist() is serial-dedup {
 
             $test.^save;
 
-            if $test-is-new && $running-pts.re-test {
+            if $running-pts.re-test {
                 with DB::CITest.^all.first({
                         $_.platform-test-set.id == $running-pts.id &&
                         $_.name eq $test-name &&
