@@ -107,7 +107,7 @@ method !get-path-for-name($name, :$create-dirs) {
 }
 
 method create-archive(SourceSpec $source-spec --> Str) {
-    trace "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
+    debug "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
 
     $!store-lock.protect: {
         sub validate($proc) {
@@ -125,7 +125,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
                 $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
                 $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha
                 -> $repo-dir, $remote, $commit {
-            trace "SourceArchiveCreator: working on " ~ $remote ~ " " ~ $commit;
+            debug "SourceArchiveCreator: working on " ~ $remote ~ " " ~ $commit;
 
             run(qw|git remote rm foobar|,
                 :cwd($repo-dir), :merge).so;
@@ -190,7 +190,7 @@ method create-archive(SourceSpec $source-spec --> Str) {
         my $id = @shas.join: "_";
         my $filepath = self!get-path-for-name: $id ~ '.tar', :create-dirs;
 
-        trace "SourceArchiveCreator: now archiving to " ~ $filepath;
+        debug "SourceArchiveCreator: now archiving to " ~ $filepath;
 
         run("rm", $filepath.relative($!work-dir), :cwd($!work-dir), :merge).so;
         validate run qw|tar -c --exclude-vcs --owner=0 --group=0 --numeric-owner -f|,

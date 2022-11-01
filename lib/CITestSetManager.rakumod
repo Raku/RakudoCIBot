@@ -38,7 +38,7 @@ method process-worklist() is serial-dedup {
                     $command.test-set = $ts;
                     $command.^save;
 
-                    trace "CITestSetManager: Starting re-test for command: " ~ $command.id;
+                    debug "CITestSetManager: Starting re-test for command: " ~ $command.id;
 
                     for $!test-set-listeners.keys {
                         $_.re-test-test-set($ts)
@@ -61,7 +61,7 @@ method process-worklist() is serial-dedup {
       -> $test-set {
         given $test-set.status {
             when DB::UNPROCESSED {
-                trace "CITestSetManager: processing unprocessed " ~ $test-set.id;
+                debug "CITestSetManager: processing unprocessed " ~ $test-set.id;
                 my $id = $!source-archive-creator.create-archive($test-set.source-spec);
                 $test-set.source-archive-id = $id;
                 $test-set.status = DB::SOURCE_ARCHIVE_CREATED;
@@ -81,7 +81,7 @@ method process-worklist() is serial-dedup {
                 }
             }
             when DB::SOURCE_ARCHIVE_CREATED {
-                trace "CITestSetManager: processing source_archive_created " ~ $test-set.id;
+                debug "CITestSetManager: processing source_archive_created " ~ $test-set.id;
                 for $!test-set-listeners.keys {
                     $_.new-test-set($test-set)
                 }

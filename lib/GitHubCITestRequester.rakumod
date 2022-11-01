@@ -232,7 +232,7 @@ method process-worklist() is serial-dedup {
 
     trace "GitHub: Processing worklist";
     for DB::CITestSet.^all.grep(*.status == DB::NEW) -> $test-set {
-        trace "GitHub: Processing NEW TestSet";
+        debug "GitHub: Processing NEW TestSet";
         my $source-spec = self!determine-source-spec(
             pr => $test-set.pr,
             project => $test-set.project,
@@ -249,7 +249,7 @@ method process-worklist() is serial-dedup {
     }
 
     for DB::CITest.^all.grep({ .status != .status-pushed }) -> $test {
-        trace "GitHub: Test status changed: " ~ $test.id ~ " from " ~ $test.status-pushed ~ " to " ~ $test.status;
+        debug "GitHub: Test status changed: " ~ $test.id ~ " from " ~ $test.status-pushed ~ " to " ~ $test.status;
 
         my $ts = $test.platform-test-set.test-set;
 
@@ -290,7 +290,7 @@ method process-worklist() is serial-dedup {
                                                                       !! $ts.git-url);
 
         if $test.status-pushed == DB::NOT_STARTED {
-            trace "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status }, { $completed-at // "" } { $conclusion // "" }";
+            debug "GitHub: Queueing test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status }, { $completed-at // "" } { $conclusion // "" }";
             $test.github-id = $!github-interface.create-check-run(
                 owner => %project-and-repo<project>,
                 repo => %project-and-repo<repo>,
@@ -305,7 +305,7 @@ method process-worklist() is serial-dedup {
                 );
         }
         else {
-            trace "GitHub: Updating test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status-pushed } => { $test.status }, { $completed-at // "" } { $conclusion // "" }";
+            debug "GitHub: Updating test { $test.name } ({ $test.id }): { %project-and-repo<project> }/{ %project-and-repo<repo> } { $ts.commit-sha }, status: { $test.status-pushed } => { $test.status }, { $completed-at // "" } { $conclusion // "" }";
             $!github-interface.update-check-run(
                 owner => %project-and-repo<project>,
                 repo => %project-and-repo<repo>,
@@ -377,7 +377,7 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
             $did-things = True;
         }
         else {
-            trace "PR repo doesn't match nomenclature. Won't try branch matching. Slug: " ~ %head-data<slug>;
+            warning "PR repo doesn't match nomenclature. Won't try branch matching. Slug: " ~ %head-data<slug>;
         }
     }
     if !$did-things {
@@ -470,7 +470,7 @@ method test-set-done($test-set) {
     # GitHub has no concept of a completed check run suite.
     # So we don't need to tell GitHub, that we are done.
     # So there is nothing to do here.
-    trace "GitHub: TestSet done: " ~ $test-set.id;
+    debug "GitHub: TestSet done: " ~ $test-set.id;
     # Run process-worklist to possibly merge PRs if a
     # merge-on-success is present.
     self.process-worklist;
@@ -500,7 +500,7 @@ method !process-merge-on-success() {
             if [&&] $test-set.platform-test-sets.Seq.map({
                     $_.tests.Seq.map(*.status == DB::SUCCESS)
             }) {
-                trace "GitHub: Doing Merge-on-success for PR: " ~ $pr.number;
+                debug "GitHub: Doing Merge-on-success for PR: " ~ $pr.number;
 
                 my $allowed = False;
                 for @pr-mcs {

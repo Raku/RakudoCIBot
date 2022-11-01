@@ -43,6 +43,7 @@ method re-test-test-set(DB::CITestSet:D $test-set) {
         $_.test-set.id == $test-set.id
     });
     if $pts {
+        debug "OBS: Retesting " ~ $pts.id;
         $pts.status = DB::PLATFORM_NOT_STARTED;
         $pts.obs-started-at = Nil;
         $pts.obs-finished-at = Nil;
@@ -70,7 +71,7 @@ method process-worklist() is serial-dedup {
                 $_.platform == DB::OBS &&
                 $_.status == DB::PLATFORM_NOT_STARTED }) {
             $running-pts = $_;
-            trace "OBS: Starting new run: " ~ $running-pts.id;
+            debug "OBS: Starting new run: " ~ $running-pts.id;
 
             $running-pts.status = DB::PLATFORM_IN_PROGRESS;
 
@@ -192,7 +193,7 @@ method process-worklist() is serial-dedup {
             $test.status = $status;
 
             if $status ⊂ (DB::SUCCESS, DB::FAILURE, DB::ABORTED) {
-                trace "OBS: Test finished: " ~ ($test.id || "new test");
+                debug "OBS: Test finished: " ~ ($test.id || "new test");
                 $test.test-finished-at //= DateTime.now;
                 $test.log //= do {
                     my $log;
@@ -239,7 +240,7 @@ method process-worklist() is serial-dedup {
                 $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS)
                 }) == 0
                 && DateTime.now - $running-pts.obs-started-at >= config.obs-min-run-duration {
-            trace "OBS: TestSet finished: " ~ $running-pts.id;
+            debug "OBS: TestSet finished: " ~ $running-pts.id;
             $running-pts.status = DB::PLATFORM_DONE;
             $running-pts.obs-finished-at = DateTime.now;
             $running-pts.^save;
