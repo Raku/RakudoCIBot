@@ -237,7 +237,7 @@ method process-worklist() is serial-dedup {
 
         if DB::CITest.^all.grep({
                 $_.platform-test-set.id == $running-pts.id &&
-                $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS) &&
+                $_.status ⊂ (DB::NOT_STARTED, DB::IN_PROGRESS, DB::UNKNOWN) &&
                 !$_.superseded
                 }) == 0
                 && DateTime.now - $running-pts.obs-started-at >= config.obs-min-run-duration {
