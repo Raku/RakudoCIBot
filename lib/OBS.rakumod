@@ -220,6 +220,7 @@ method process-worklist() is serial-dedup {
                         !$_.successor.defined
                 }) {
                     $_.successor = $test;
+                    $_.^save;
                 }
             }
 
