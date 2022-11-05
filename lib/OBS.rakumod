@@ -205,6 +205,9 @@ method process-worklist() is serial-dedup {
                         { $pack-log // "No log found" }
 
                         EOF
+
+                        # If this build failed, the logs of the succeeding ones are not related to this build. So don't include them here.
+                        last if $build.status{$package} ne "succeeded";
                     }
                     $log .= trim-trailing;
                     $log;
