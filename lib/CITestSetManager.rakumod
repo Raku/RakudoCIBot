@@ -144,7 +144,7 @@ method !check-for-flappers() {
                 $_.flapper.defined
         }) {
             # It's not a flapper re-test.
-            if $!flapper-detector.is-flapper($test.log) {
+            if $!flapper-detector.is-flapper($test.log) -> $flapper-name {
                 my $ts = $test.platform-test-set.test-set;
                 for $!test-set-listeners.keys {
                     $_.re-test-test-set($ts)
@@ -152,6 +152,8 @@ method !check-for-flappers() {
 
                 $ts.status = DB::WAITING_FOR_TEST_RESULTS;
                 $ts.^save;
+
+                $test.flapper = $flapper-name;
             }
 
             $test.flapper-checked = True;
