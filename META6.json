@@ -1,16 +1,23 @@
 {
+    "name": "RakudoCIBot",
     "api": "0",
+    "version": "0.0.1",
     "auth": null,
+    "description": null,
+    "license": "Artistic-2.0",
+    "source-url": null,
+    "meta-version": 0,
+    "perl": "6.d",
     "authors": [
         "Patrick Böker <patrickb@cpan.org>"
     ],
     "depends": [
-        "Cro::HTTP:ver<0.8.7>",
-        "Cro::WebApp:ver<0.8.7>",
-        "LibXML:ver<0.7.4>:auth<zef:dwarring>",
-        "Base64:ver<0.0.2>:auth<github:ugexe>",
+        "Cro::HTTP:ver<0.8.9>",
+        "Cro::WebApp:ver<0.8.9>",
+        "LibXML:ver<0.10.2>:auth<zef:dwarring>",
+        "Base64:ver<0.1.0>:auth<github:ugexe>",
         "OO::Monitors:ver<1.1.1>",
-        "Red:ver<0.1.63>:auth<zef:FCO>:api<2>",
+        "Red:ver<0.1.66>:auth<zef:FCO>:api<2>",
         "Log::Async:ver<0.0.8>",
         "JSON::JWT:ver<1.1.1>:auth<zef:raku-community-modules>",
         "YAMLish:ver<0.0.6>",
@@ -22,11 +29,6 @@
         "Test::Mock",
         "JSON::Fast"
     ],
-    "description": null,
-    "license": "Artistic-2.0",
-    "meta-version": 0,
-    "name": "RakudoCIBot",
-    "perl": "6.d",
     "provides": {
         "RakudoCIBot": "lib/RakudoCIBot.rakumod",
         "CITestSetManager": "lib/CITestSetManager.rakumod",
@@ -71,8 +73,6 @@
         "static/css/normalize.css",
         "static/404.html"
     ],
-    "source-url": null,
     "tags": [
-    ],
-    "version": "0.0.0"
+    ]
 }
