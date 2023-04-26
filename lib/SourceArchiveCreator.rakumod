@@ -121,26 +121,26 @@ method create-archive(SourceSpec $source-spec --> Str) {
         }
 
         my @shas;
-        for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha,
-                $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha,
-                $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha
-                -> $repo-dir, $remote, $commit {
+        for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha, config.projects.rakudo.main,
+                $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha, config.projects.nqp.main,
+                $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha, config.projects.moar.main
+                -> $repo-dir, $remote, $commit, $main {
             debug "SourceArchiveCreator: working on " ~ $remote ~ " " ~ $commit;
+            my $tmp-branch = 'tmp-branch';
 
-            run(qw|git remote rm foobar|,
+            run(qw|git remote rm|, $tmp-branch,
                 :cwd($repo-dir), :merge).so;
 
-            validate run qw|git remote add foobar|, $remote,
+            validate run qw|git remote add|, $tmp-branch, $remote,
                 :cwd($repo-dir), :merge;
 
-            #validate run qw|git fetch foobar|, |($.fetch-ref ?? ("+refs/" ~ $.fetch-ref ~ ":refs/remotes/" ~ $.fetch-ref,) !! ()),
-            validate run qw|git fetch foobar|,
+            #validate run qw|git fetch|, $tmp-branch, |($.fetch-ref ?? ("+refs/" ~ $.fetch-ref ~ ":refs/remotes/" ~ $.fetch-ref,) !! ()),
+            validate run qw|git fetch|, $tmp-branch,
                 :cwd($repo-dir), :merge;
 
-            # TODO no hard coded master branch.
-            my $to-use = $commit eq 'LATEST' ?? 'foobar/master' !! $commit;
+            my $ref = $commit eq 'LATEST' ?? "$tmp-branch/$main" !! $commit;
 
-            validate run qw|git reset --hard|, $to-use,
+            validate run qw|git reset --hard|, $ref,
                 :cwd($repo-dir), :merge;
 
             # updating submodules

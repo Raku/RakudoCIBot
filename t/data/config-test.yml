@@ -11,16 +11,19 @@ projects:
     rakudo:
         project: rakudo
         repo: rakudo
+        main: main
         repo-url: https://github.com/rakudo/rakudo.git
         install-id: 20243470
     nqp:
         project: Raku
         repo: nqp
+        main: main
         repo-url: https://github.com/nqp/nqp.git
         install-id: 20243470
     moar:
         project: MoarVM
         repo: MoarVM
+        main: master
         repo-url: https://github.com/MoarVM/MoarVM.git
         install-id: 20243470
 

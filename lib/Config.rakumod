@@ -4,6 +4,7 @@ class ConfigProject {
     has $.project;
     has $.repo;
     has $.slug;
+    has $.main;
     has $.repo-url;
     has $.install-id;
 
@@ -12,6 +13,7 @@ class ConfigProject {
             project    => %config<project>,
             repo       => %config<repo>,
             slug       => %config<project> ~ "/" ~ %config<repo>,
+            main       => %config<main>,
             repo-url   => %config<repo-url>,
             install-id => %config<install-id>,
         ;

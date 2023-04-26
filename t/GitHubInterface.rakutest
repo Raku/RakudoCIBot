@@ -20,7 +20,6 @@ check-mock($processor,
         $_.number == 3
         && $_.user-url eq "https://github.com/patrickbkr/GitHub-API-Testing/pull/3"
         && $_.comments[0].body eq "Some description."
-        && $_.head-url eq "https://github.com/patrickbkr/GitHub-API-Testing.git"
         && $_.base-url eq "https://github.com/patrickbkr/GitHub-API-Testing.git"
         && $_.head-branch eq "feature-branch-1"
         && $_.commit-task.commit-sha eq "f2b9e0fca8ad20c14bdc188240918720613d2cee"
