@@ -343,7 +343,7 @@ method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, Dat
     self!validate($!gh.checks-runs.update($owner, $repo, $check-run-id,
         :$status,
         |($completed-at ?? completed-at => $completed-at.Str !! {}),
-        :$conclusion
+        |($conclusion ?? :$conclusion !! {}),
     ).data)
 }
 
