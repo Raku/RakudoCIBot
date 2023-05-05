@@ -339,7 +339,7 @@ method create-check-run(:$owner!, :$repo!, :$name!, :$sha!, :$url!, Str() :$id!,
     return $data<id>;
 }
 
-method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, DateTime:D :$completed-at, :$conclusion) {
+method update-check-run(:$owner!, :$repo!, Str() :$check-run-id!, :$status!, DateTime :$completed-at, :$conclusion) {
     self!validate($!gh.checks-runs.update($owner, $repo, $check-run-id,
         :$status,
         |($completed-at ?? completed-at => $completed-at.Str !! {}),
