@@ -36,7 +36,7 @@ sub testset-routes($sac) is export {
                     status => .status,
                     status-indicator-class =>
                         (.status != DB::DONE ?? "in-progress" !!
-                        ([&&] .platform-test-sets.Seq.map({ $_.tests.Seq.map({.status == DB::SUCCESS}) }).flat) ?? "success" !! "failure"),
+                        ([&&] .platform-test-sets.Seq.map({ $_.tests.Seq.map({.superseded || .status == DB::SUCCESS}) }).flat) ?? "success" !! "failure"),
                     error => .error,
                     rakudo-git-url => .source-spec.rakudo-git-url,
                     rakudo-commit-sha => .source-spec.rakudo-commit-sha,
