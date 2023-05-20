@@ -9,8 +9,8 @@ Install and set up Postgres
     sudo systemctl start postgresql
 
     sudo -u postgres psql
-        CREATE USER your-user WITH CREATEDB
-        CREATE DATABASE rcb_dev OWNER your-user
+        CREATE USER <your-user> WITH CREATEDB;
+        CREATE DATABASE rcb_dev OWNER <your-user>;
         \q
 
 
