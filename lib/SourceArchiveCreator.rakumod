@@ -1,24 +1,7 @@
 use OO::Monitors;
 use Log::Async;
+use DB;
 use Config;
-
-class SourceSpec {
-    # A Git SHA-1 is a length 40 hex number
-    subset SHA1 of Str where m:i/ [ <[0..9a..f]> ** 40 ] | latest | "" /;
-
-    has Str $.rakudo-git-url = config.projects.rakudo.repo-url;
-    has SHA1 $.rakudo-commit-sha = 'LATEST';
-    has Str $.nqp-git-url = config.projects.nqp.repo-url;
-    has SHA1 $.nqp-commit-sha = 'LATEST';
-    has Str $.moar-git-url = config.projects.moar.repo-url;
-    has SHA1 $.moar-commit-sha = 'LATEST';
-    
-    submethod TWEAK() {
-        $!rakudo-commit-sha .= uc;
-        $!nqp-commit-sha .= uc;
-        $!moar-commit-sha .= uc;
-    }
-}
 
 class X::ArchiveCreationException is Exception {
 }
@@ -106,8 +89,10 @@ method !get-path-for-name($name, :$create-dirs) {
     return $dir.add($name);
 }
 
-method create-archive(SourceSpec $source-spec --> Str) {
+method create-archive(DB::CITestSet $test-set) {
     debug "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
+
+    SourceSpec $source-spec = $test-set.source-spec;
 
     $!store-lock.protect: {
         sub validate($proc) {
@@ -236,8 +221,26 @@ method create-archive(SourceSpec $source-spec --> Str) {
         run("rm", $filepath-rakudo ~ $ext, :cwd($!work-dir), :merge).so;
         validate run qw|xz -9|, $filepath-rakudo ~ ".tar", :cwd($!work-dir), :merge;
 
+        $test-set.source-archive-exists = True;
+        $test-set.source-archive-id = $id;
+        $test-set.^save;
+    }
+}
 
-        return $id;
+method clean-old-archives() {
+    for DB::CITestSet.^all.grep({
+            $_.source-archive-exists == True &&
+            $_.finished-at < DateTime.now - config.source-archive-retain-days * 24 * 60 * 60
+    }) -> $test-set {
+        my $filepath-base = self!get-path-for-name($id, :create-dirs).relative($!work-dir);
+
+        run("rm", $filepath-base ~ ".tar.xz",        :cwd($!work-dir), :merge).so;
+        run("rm", $filepath-base ~ "-moar.tar.xz",   :cwd($!work-dir), :merge).so;
+        run("rm", $filepath-base ~ "-nqp.tar.xz",    :cwd($!work-dir), :merge).so;
+        run("rm", $filepath-base ~ "-rakudo.tar.xz", :cwd($!work-dir), :merge).so;
+
+        $test-set.source-archive-exists = False;
+        $test-set.^save;
     }
 }
 

@@ -62,8 +62,7 @@ method process-worklist() is serial-dedup {
         given $test-set.status {
             when DB::UNPROCESSED {
                 debug "CITestSetManager: processing unprocessed " ~ $test-set.id;
-                my $id = $!source-archive-creator.create-archive($test-set.source-spec);
-                $test-set.source-archive-id = $id;
+                $!source-archive-creator.create-archive($test-set);
                 $test-set.status = DB::SOURCE_ARCHIVE_CREATED;
                 $test-set.^save;
                 proceed;

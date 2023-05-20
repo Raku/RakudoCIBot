@@ -115,6 +115,9 @@ method start() {
         whenever Supply.interval(config.flapper-list-interval) {
             $!flapper-detector.refresh-flapper-list;
         }
+        whenever Supply.interval(config.sac-cleanup-interval) {
+            $!source-archive-creator.clean-old-archives;
+        }
         whenever $!running {
             done()
         }

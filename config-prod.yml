@@ -47,6 +47,9 @@ sac-work-dir: work/sac-work
 sac-store-dir: work/sac-store
 obs-work-dir: work/obs-work
 
+sac-cleanup-interval: 3600 # 60 * 60
+source-archive-retain-days: 60
+
 flapper-list-url: https://raw.githubusercontent.com/Raku/RakudoCIBot/main/flapper-list.yml
 
 testset-manager-interval: 300 # 5 * 60

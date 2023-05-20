@@ -51,6 +51,9 @@ class Config {
     has $.sac-store-dir;
     has $.obs-work-dir;
 
+    has $.sac-cleanup-interval;
+    has $.source-archive-retain-days;
+
     has $.flapper-list-url;
 
     has $.testset-manager-interval;
@@ -91,6 +94,9 @@ class Config {
             sac-work-dir  => %config<sac-work-dir>,
             sac-store-dir => %config<sac-store-dir>,
             obs-work-dir  => %config<obs-work-dir>,
+
+            sac-cleanup-interval       => %config<sac-cleanup-interval>,
+            source-archive-retain-days => %config<source-archive-retain-days>,
 
             flapper-list-url => %config<flapper-list-url>,
 
