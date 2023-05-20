@@ -1,3 +1,4 @@
+use Log::Async;
 use OO::Monitors;
 use Log::Async;
 use DB;
@@ -230,9 +231,11 @@ method create-archive(DB::CITestSet $test-set) {
 method clean-old-archives() {
     for DB::CITestSet.^all.grep({
             $_.source-archive-exists == True &&
+            $_.finished-at.defined &&
             $_.finished-at < DateTime.now - config.source-archive-retain-days * 24 * 60 * 60
     }) -> $test-set {
-        my $filepath-base = self!get-path-for-name($id, :create-dirs).relative($!work-dir);
+        trace "Removing archives for " ~ $test-set.id ~ " finished at " ~ $test-set.finished-at;
+        my $filepath-base = self!get-path-for-name($test-set.source-archive-id, :create-dirs).relative($!work-dir);
 
         run("rm", $filepath-base ~ ".tar.xz",        :cwd($!work-dir), :merge).so;
         run("rm", $filepath-base ~ "-moar.tar.xz",   :cwd($!work-dir), :merge).so;
