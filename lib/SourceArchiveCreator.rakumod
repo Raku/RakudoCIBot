@@ -90,9 +90,9 @@ method !get-path-for-name($name, :$create-dirs) {
 }
 
 method create-archive(DB::CITestSet $test-set) {
-    debug "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
+    my SourceSpec $source-spec = $test-set.source-spec;
 
-    SourceSpec $source-spec = $test-set.source-spec;
+    debug "SourceArchiveCreator: starting creation: " ~ $source-spec.raku;
 
     $!store-lock.protect: {
         sub validate($proc) {
