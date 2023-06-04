@@ -3,6 +3,7 @@ use OO::Monitors;
 use Log::Async;
 use DB;
 use Config;
+use Red::Operators:api<2>;
 
 class X::ArchiveCreationException is Exception {
 }
@@ -232,7 +233,7 @@ method clean-old-archives() {
     for DB::CITestSet.^all.grep({
             $_.source-archive-exists == True &&
             $_.finished-at.defined &&
-            $_.finished-at < DateTime.now - config.source-archive-retain-days * 24 * 60 * 60
+            $_.finished-at < DateTime.now.earlier(days => config.source-archive-retain-days)
     }) -> $test-set {
         trace "Removing archives for " ~ $test-set.id ~ " finished at " ~ $test-set.finished-at;
         my $filepath-base = self!get-path-for-name($test-set.source-archive-id, :create-dirs).relative($!work-dir);
