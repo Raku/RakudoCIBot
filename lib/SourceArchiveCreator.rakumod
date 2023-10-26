@@ -108,10 +108,10 @@ method create-archive(DB::CITestSet $test-set) {
         }
 
         my @shas;
-        for $!rakudo-dir, $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha, config.projects.rakudo.main,
-                $!nqp-dir,    $source-spec.nqp-git-url, $source-spec.nqp-commit-sha, config.projects.nqp.main,
-                $!moar-dir,   $source-spec.moar-git-url, $source-spec.moar-commit-sha, config.projects.moar.main
-                -> $repo-dir, $remote, $commit, $main {
+        for $!rakudo-dir,   $source-spec.rakudo-git-url, $source-spec.rakudo-commit-sha, $source-spec.rakudo-fetch-ref, config.projects.rakudo.main,
+                $!nqp-dir,  $source-spec.nqp-git-url,    $source-spec.nqp-commit-sha,    $source-spec.nqp-fetch-ref,    config.projects.nqp.main,
+                $!moar-dir, $source-spec.moar-git-url,   $source-spec.moar-commit-sha,   $source-spec.moar-fetch-ref,   config.projects.moar.main
+                -> $repo-dir, $remote, $commit, $fetch-ref, $main {
             debug "SourceArchiveCreator: working on " ~ $remote ~ " " ~ $commit;
             my $tmp-branch = 'tmp-branch';
 
@@ -121,8 +121,7 @@ method create-archive(DB::CITestSet $test-set) {
             validate run qw|git remote add|, $tmp-branch, $remote,
                 :cwd($repo-dir), :merge;
 
-            #validate run qw|git fetch|, $tmp-branch, |($.fetch-ref ?? ("+refs/" ~ $.fetch-ref ~ ":refs/remotes/" ~ $.fetch-ref,) !! ()),
-            validate run qw|git fetch|, $tmp-branch,
+            validate run qw|git fetch|, $tmp-branch, |($fetch-ref ?? ("+refs/" ~ $fetch-ref ~ ":refs/remotes/" ~ $fetch-ref,) !! ()),
                 :cwd($repo-dir), :merge;
 
             my $ref = $commit eq 'LATEST' ?? "$tmp-branch/$main" !! $commit;

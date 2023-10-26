@@ -276,6 +276,8 @@ method process-worklist() is serial-dedup {
         # NOT the head (the repo where the new commits are).
         # Using the head repo will not work, as that's usually a different repo where the RCB is
         # not installed on and thus has no permissons to add check_runs.
+        # In addition it's possible there is no head repo. That is the case when the branch or repo a
+        # PR is based on has been deleted.
         # One would think using the base repo can't work, because the commits are not part of that
         # repository. But there is some almost completely undocumented behavior in GitHub that copies
         # PR commits to the base repo and even creates merge commits (without the PR being merged!).
@@ -330,7 +332,8 @@ method process-worklist() is serial-dedup {
 
 method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> SourceSpec) {
     my ($rakudo-git-url, $nqp-git-url, $moar-git-url,
-        $rakudo-commit-sha, $nqp-commit-sha, $moar-commit-sha);
+        $rakudo-commit-sha, $nqp-commit-sha, $moar-commit-sha,
+        $rakudo-fetch-ref, $nqp-fetch-ref, $moar-fetch-ref);
     my $did-things = False;
     with $pr {
         my %head-data = self!github-url-to-project-repo($pr.head-url);
@@ -354,13 +357,14 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
 
             my $branch = $pr.head-branch;
 
-            for DB::RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $r-proj, $r-repo,
-                    DB::NQP, $nqp-git-url, $nqp-commit-sha, $n-proj, $n-repo,
-                    DB::MOAR, $moar-git-url, $moar-commit-sha, $m-proj, $m-repo
-            -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $gh-project, $repo {
+            for DB::RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $rakudo-fetch-ref, $r-proj, $r-repo,
+                    DB::NQP, $nqp-git-url, $nqp-commit-sha, $nqp-fetch-ref, $n-proj, $n-repo,
+                    DB::MOAR, $moar-git-url, $moar-commit-sha, $moar-fetch-ref, $m-proj, $m-repo
+            -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $out-fetch-ref is rw, $gh-project, $repo {
                 if $cur-proj == $project {
-                    $out-url = $git-url;
+                    $out-url = $pr.base-url;
                     $out-commit-sha = $commit-sha;
+                    $out-fetch-ref = "pull/{$pr.number}/head";
                 }
                 else {
                     my $branch-data = $!github-interface.get-branch(:owner($gh-project), :$repo, :$branch);
@@ -381,18 +385,39 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
         }
     }
     if !$did-things {
-        given $project {
-            when DB::RAKUDO {
-                $rakudo-git-url = $git-url;
-                $rakudo-commit-sha = $commit-sha;
+        with $pr {
+            given $project {
+                when DB::RAKUDO {
+                    $rakudo-git-url = $pr.base-url;
+                    $rakudo-commit-sha = $commit-sha;
+                    $rakudo-fetch-ref = "pull/{$pr.number}/head";
+                }
+                when DB::NQP {
+                    $nqp-git-url = $pr.base-url;
+                    $nqp-commit-sha = $commit-sha;
+                    $nqp-fetch-ref = "pull/{$pr.number}/head";
+                }
+                when DB::MOAR {
+                    $moar-git-url = $pr.base-url;
+                    $moar-commit-sha = $commit-sha;
+                    $moar-fetch-ref = "pull/{$pr.number}/head";
+                }
             }
-            when DB::NQP {
-                $nqp-git-url = $git-url;
-                $nqp-commit-sha = $commit-sha;
-            }
-            when DB::MOAR {
-                $moar-git-url = $git-url;
-                $moar-commit-sha = $commit-sha;
+        }
+        else {
+            given $project {
+                when DB::RAKUDO {
+                    $rakudo-git-url = $git-url;
+                    $rakudo-commit-sha = $commit-sha;
+                }
+                when DB::NQP {
+                    $nqp-git-url = $git-url;
+                    $nqp-commit-sha = $commit-sha;
+                }
+                when DB::MOAR {
+                    $moar-git-url = $git-url;
+                    $moar-commit-sha = $commit-sha;
+                }
             }
         }
     }
@@ -400,10 +425,13 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
     return SourceSpec.new:
         |($rakudo-git-url    ?? :$rakudo-git-url    !! ()),
         |($rakudo-commit-sha ?? :$rakudo-commit-sha !! ()),
+        |($rakudo-fetch-ref  ?? :$rakudo-fetch-ref  !! ()),
         |($nqp-git-url       ?? :$nqp-git-url       !! ()),
         |($nqp-commit-sha    ?? :$nqp-commit-sha    !! ()),
+        |($nqp-fetch-ref     ?? :$nqp-fetch-ref     !! ()),
         |($moar-git-url      ?? :$moar-git-url      !! ()),
         |($moar-commit-sha   ?? :$moar-commit-sha   !! ()),
+        |($moar-fetch-ref    ?? :$moar-fetch-ref    !! ()),
 }
 
 method !github-url-to-project-repo($url) {

@@ -7,10 +7,13 @@ class SourceSpec {
 
     has Str $.rakudo-git-url = config.projects.rakudo.repo-url;
     has SHA1 $.rakudo-commit-sha = 'LATEST';
+    has Str $.rakudo-fetch-ref;
     has Str $.nqp-git-url = config.projects.nqp.repo-url;
     has SHA1 $.nqp-commit-sha = 'LATEST';
+    has Str $.nqp-fetch-ref;
     has Str $.moar-git-url = config.projects.moar.repo-url;
     has SHA1 $.moar-commit-sha = 'LATEST';
+    has Str $.moar-fetch-ref;
     
     submethod TWEAK() {
         $!rakudo-commit-sha .= uc;
@@ -157,10 +160,13 @@ model CITestSet is rw is table<citest_set> {
 
         has Str                   $!rakudo-git-url           is column{ :nullable };
         has Str                   $!rakudo-commit-sha        is column{ :nullable };
+        has Str                   $!rakudo-fetch-ref         is column{ :nullable };
         has Str                   $!nqp-git-url              is column{ :nullable };
         has Str                   $!nqp-commit-sha           is column{ :nullable };
+        has Str                   $!nqp-fetch-ref            is column{ :nullable };
         has Str                   $!moar-git-url             is column{ :nullable };
         has Str                   $!moar-commit-sha          is column{ :nullable };
+        has Str                   $!moar-fetch-ref           is column{ :nullable };
 
         has Str                   $.source-archive-id        is column{ :nullable, :type<text> };
         has UInt                  $.source-retrieval-retries is column = 0;
@@ -173,19 +179,25 @@ model CITestSet is rw is table<citest_set> {
     multi method source-spec($spec) {
         $!rakudo-git-url = $spec.rakudo-git-url;
         $!rakudo-commit-sha = $spec.rakudo-commit-sha;
+        $!rakudo-fetch-ref = $spec.rakudo-fetch-ref;
         $!nqp-git-url = $spec.nqp-git-url;
         $!nqp-commit-sha = $spec.nqp-commit-sha;
+        $!nqp-fetch-ref = $spec.nqp-fetch-ref;
         $!moar-git-url = $spec.moar-git-url;
         $!moar-commit-sha = $spec.moar-commit-sha;
+        $!moar-fetch-ref = $spec.moar-fetch-ref;
     }
     multi method source-spec() {
         SourceSpec.new(
             rakudo-git-url    => $!rakudo-git-url // "",
             rakudo-commit-sha => $!rakudo-commit-sha // "",
+            rakudo-fetch-ref  => $!rakudo-fetch-ref // "",
             nqp-git-url       => $!nqp-git-url // "",
             nqp-commit-sha    => $!nqp-commit-sha // "",
+            nqp-fetch-ref     => $!nqp-fetch-ref // "",
             moar-git-url      => $!moar-git-url // "",
             moar-commit-sha   => $!moar-commit-sha // "",
+            moar-fetch-ref    => $!moar-fetch-ref // "",
         )
     }
 }
