@@ -65,6 +65,7 @@ method parse-hook-request($event, %json) {
             if %json<action> eq 'synchronize'|'opened' {
                 $!processor.add-task: GitHubCITestRequester::PRTask.new(
                     repo        => %json<pull_request><base><repo><name>,
+                    head-url    => %json<pull_request><head><repo><clone_url>,
                     base-url    => %json<pull_request><base><repo><clone_url>,
                     head-branch => %json<pull_request><head><ref>,
                     number      => %json<pull_request><number>,
@@ -283,6 +284,7 @@ method retrieve-pulls($project, $repo, :$last-cursor is copy) {
                 GitHubCITestRequester::PRTask.new:
                     :$repo,
                     base-url     => %pull-data<baseRepository><url> ~ '.git',
+                    head-url     => %pull-data<headRepository><url> ~ '.git',
                     head-branch  => %pull-data<headRefName>,
                     number       => %pull-data<number>,
                     title        => %pull-data<title>,

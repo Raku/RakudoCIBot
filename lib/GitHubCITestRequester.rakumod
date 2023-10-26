@@ -45,6 +45,7 @@ class PRTask {
     has $.title is required;
     has PRState $.state is required;
     has $.base-url is required;
+    has $.head-url is required;
     has $.head-branch is required;
     has $.user-url is required;
     has PRCommentTask @.comments;
@@ -87,6 +88,7 @@ method !process-pr-task(PRTask $pr) {
             project      => self!repo-to-db-project($pr.repo),
             number       => $pr.number,
             base-url     => $pr.base-url,
+            head-url     => $pr.head-url,
             head-branch  => $pr.head-branch,
             user-url     => $pr.user-url,
             status       => DB::OPEN,
@@ -116,7 +118,7 @@ method !process-pr-commit-task(PRCommitTask $commit) {
         DB::CITestSet.^create:
             event-type => DB::PR,
             :$project,
-            git-url    => $pr.base-url,
+            git-url    => $pr.head-url,
             commit-sha => $commit.commit-sha,
             user-url   => $commit.user-url,
             :$pr,
@@ -274,8 +276,6 @@ method process-worklist() is serial-dedup {
         # NOT the head (the repo where the new commits are).
         # Using the head repo will not work, as that's usually a different repo where the RCB is
         # not installed on and thus has no permissons to add check_runs.
-        # In addition it's possible there is no head repo. That is the case when the branch or repo a
-        # PR is based on has been deleted.
         # One would think using the base repo can't work, because the commits are not part of that
         # repository. But there is some almost completely undocumented behavior in GitHub that copies
         # PR commits to the base repo and even creates merge commits (without the PR being merged!).
@@ -333,7 +333,7 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
         $rakudo-commit-sha, $nqp-commit-sha, $moar-commit-sha);
     my $did-things = False;
     with $pr {
-        my %head-data = self!github-url-to-project-repo($pr.base-url);
+        my %head-data = self!github-url-to-project-repo($pr.head-url);
         if $project == DB::RAKUDO    && %head-data<repo> eq config.projects.rakudo.repo ||
                 $project == DB::NQP  && %head-data<repo> eq config.projects.nqp.repo ||
                 $project == DB::MOAR && %head-data<repo> eq config.projects.moar.repo {
