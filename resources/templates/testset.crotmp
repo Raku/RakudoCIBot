@@ -1,5 +1,5 @@
 <:use 'page.crotmp'>
-<|page('Test Set')>
+<|page('Test Set', .login-url)>
 <h1>Test Set <.id> <div class="status-indicator <.status-indicator-class>"></div></h1>
 
 <div class="cols">

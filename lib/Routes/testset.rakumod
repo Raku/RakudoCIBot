@@ -5,7 +5,7 @@ use Cro::HTTP::Router;
 use Cro::WebApp::Template;
 use Red::Operators:api<2>;
 
-sub testset-routes($sac) is export {
+sub testset-routes($sac, &gen-login-data) is export {
     route {
         get -> "testset", UInt $id {
             with DB::CITestSet.^load($id) {
@@ -28,6 +28,7 @@ sub testset-routes($sac) is export {
                     };
                 }
                 my %data =
+                    login-url => gen-login-data("/testset/$id"),
                     id => .id,
                     created-at => .creation,
                     project => .project,

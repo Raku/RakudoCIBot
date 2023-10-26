@@ -61,8 +61,11 @@ submethod TWEAK() {
     ;
     $!github-interface .= new:
         app-id => config.github-app-id,
+        client-id => config.github-client-id,
+        client-secret => config.github-client-secret,
         pem => $gh-pem,
         processor => $!requester,
+        redirect-url => config.hook-url ~ "gh-oauth-callback",
     ;
     $!requester.github-interface = $!github-interface;
     $!testset-manager.register-status-listener($!requester);
@@ -127,7 +130,7 @@ method start() {
         http => <1.1>,
         host => config.web-host,
         port => config.web-port,
-        application => routes($!source-archive-creator, $!github-interface, $!obs),
+        application => routes($!testset-manager, $!source-archive-creator, $!github-interface, $!obs),
         after => [
             Cro::HTTP::Log::File.new(logs => $*OUT, errors => $*ERR)
         ]

@@ -156,7 +156,6 @@ method !process-pr-comment-task(PRCommentTask $comment) {
                 comment-id => $comment.id,
                 comment-url => $comment.user-url,
                 :$command,
-                status => DB::COMMAND_NEW,
             ;
             if $command == DB::MERGE_ON_SUCCESS {
                 $!github-interface.add-issue-comment:
@@ -199,9 +198,9 @@ method !process-commit-task(CommitTask $commit) {
 
 method poll-for-changes() is serial-dedup {
     trace "GitHub: Polling for changes";
-    for DB::RAKUDO, config.projects.rakudo,
-        DB::NQP,    config.projects.nqp,
-        DB::MOAR,   config.projects.moar -> $db-project, $project {
+    for RAKUDO, config.projects.rakudo,
+        NQP,    config.projects.nqp,
+        MOAR,   config.projects.moar -> $db-project, $project {
         my $state = DB::GitHubPullState.^all.first({ $_.project == $db-project }) // DB::GitHubPullState.^create(project => $db-project);
 
         # PRs
@@ -338,12 +337,12 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
     my $did-things = False;
     with $pr {
         my %head-data = self!github-url-to-project-repo($pr.head-url);
-        if $project == DB::RAKUDO    && %head-data<repo> eq config.projects.rakudo.repo ||
-                $project == DB::NQP  && %head-data<repo> eq config.projects.nqp.repo ||
-                $project == DB::MOAR && %head-data<repo> eq config.projects.moar.repo {
-            my $uses-core-repos = %head-data<slug> eq ($project == DB::RAKUDO ?? config.projects.rakudo.slug !!
-                                                       $project == DB::NQP    ?? config.projects.nqp.slug !!
-                                                       $project == DB::MOAR   ?? config.projects.moar.slug !!
+        if $project == RAKUDO    && %head-data<repo> eq config.projects.rakudo.repo ||
+                $project == NQP  && %head-data<repo> eq config.projects.nqp.repo ||
+                $project == MOAR && %head-data<repo> eq config.projects.moar.repo {
+            my $uses-core-repos = %head-data<slug> eq ($project == RAKUDO ?? config.projects.rakudo.slug !!
+                                                       $project == NQP    ?? config.projects.nqp.slug !!
+                                                       $project == MOAR   ?? config.projects.moar.slug !!
                                                        "should never happen");
             my ($r-proj, $r-repo, $n-proj, $n-repo, $m-proj, $m-repo) = do if $uses-core-repos {
                 config.projects.rakudo.project, config.projects.rakudo.repo,
@@ -358,9 +357,9 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
 
             my $branch = $pr.head-branch;
 
-            for DB::RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $rakudo-fetch-ref, $r-proj, $r-repo,
-                    DB::NQP, $nqp-git-url, $nqp-commit-sha, $nqp-fetch-ref, $n-proj, $n-repo,
-                    DB::MOAR, $moar-git-url, $moar-commit-sha, $moar-fetch-ref, $m-proj, $m-repo
+            for RAKUDO, $rakudo-git-url, $rakudo-commit-sha, $rakudo-fetch-ref, $r-proj, $r-repo,
+                    NQP, $nqp-git-url, $nqp-commit-sha, $nqp-fetch-ref, $n-proj, $n-repo,
+                    MOAR, $moar-git-url, $moar-commit-sha, $moar-fetch-ref, $m-proj, $m-repo
             -> $cur-proj, $out-url is rw, $out-commit-sha is rw, $out-fetch-ref is rw, $gh-project, $repo {
                 if $cur-proj == $project {
                     $out-url = $pr.base-url;
@@ -388,17 +387,17 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
     if !$did-things {
         with $pr {
             given $project {
-                when DB::RAKUDO {
+                when RAKUDO {
                     $rakudo-git-url = $pr.base-url;
                     $rakudo-commit-sha = $commit-sha;
                     $rakudo-fetch-ref = "pull/{$pr.number}/head";
                 }
-                when DB::NQP {
+                when NQP {
                     $nqp-git-url = $pr.base-url;
                     $nqp-commit-sha = $commit-sha;
                     $nqp-fetch-ref = "pull/{$pr.number}/head";
                 }
-                when DB::MOAR {
+                when MOAR {
                     $moar-git-url = $pr.base-url;
                     $moar-commit-sha = $commit-sha;
                     $moar-fetch-ref = "pull/{$pr.number}/head";
@@ -407,15 +406,15 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
         }
         else {
             given $project {
-                when DB::RAKUDO {
+                when RAKUDO {
                     $rakudo-git-url = $git-url;
                     $rakudo-commit-sha = $commit-sha;
                 }
-                when DB::NQP {
+                when NQP {
                     $nqp-git-url = $git-url;
                     $nqp-commit-sha = $commit-sha;
                 }
-                when DB::MOAR {
+                when MOAR {
                     $moar-git-url = $git-url;
                     $moar-commit-sha = $commit-sha;
                 }
@@ -467,18 +466,18 @@ method !command-to-enum($text is copy) {
 
 method !repo-to-project-repo($repo) {
     given $repo.lc {
-        when "rakudo" { { project => config.projects.rakudo.project, repo => config.projects.rakudo.repo, db-project => DB::RAKUDO } }
-        when "nqp" { { project => config.projects.nqp.project, repo => config.projects.nqp.repo, db-project => DB::NQP } }
-        when "moarvm" { { project => config.projects.moar.project, repo => config.projects.moar.repo, db-project => DB::MOAR } }
+        when "rakudo" { { project => config.projects.rakudo.project, repo => config.projects.rakudo.repo, db-project => RAKUDO } }
+        when "nqp" { { project => config.projects.nqp.project, repo => config.projects.nqp.repo, db-project => NQP } }
+        when "moarvm" { { project => config.projects.moar.project, repo => config.projects.moar.repo, db-project => MOAR } }
         default       { die "unknown project"; }
     }
 }
 
 method !db-project-to-project-repo($db-project) {
     my $repo = do given $db-project {
-        when DB::RAKUDO { "rakudo" }
-        when DB::NQP { "nqp" }
-        when DB::MOAR { "moarvm" }
+        when RAKUDO { "rakudo" }
+        when NQP { "nqp" }
+        when MOAR { "moarvm" }
     }
     self!repo-to-project-repo($repo);
 }

@@ -45,12 +45,6 @@ enum CIPlatformTestSetStatus <
     PLATFORM_DONE
 >;
 
-enum Project <
-    MOAR
-    NQP
-    RAKUDO
->;
-
 enum CITestSetStatus (
     "NEW",                      # As created by the GitHubCITestRequester. SourceSpec has not been created yet.
     "UNPROCESSED",              # SourceSpec has been created. Now to be processed by the CITestSetManager
@@ -145,7 +139,7 @@ model CITestSet is rw is table<citest_set> {
     # Responsibility of the GitHubCITestRequester
         has DB::GitHubEventType   $.event-type               is column;
 
-        has DB::Project           $.project                  is column;
+        has Project               $.project                  is column;
         has Str                   $.git-url                  is column;
         has Str                   $.commit-sha               is column;
         has Str                   $.user-url                 is column;
@@ -205,7 +199,7 @@ model CITestSet is rw is table<citest_set> {
 model GitHubPullState is rw is table<github_pull_state> {
     has UInt          $.id                         is serial;
     has DateTime      $.creation                   is column .= now;
-    has DB::Project   $.project                    is column;
+    has Project   $.project                    is column;
 
     has Str           $.last-default-branch-cursor is column{ :nullable };
     has Str           $.last-pr-cursor             is column{ :nullable };
@@ -215,7 +209,7 @@ model GitHubPR is rw is table<github_pr> {
     has UInt          $.id            is serial;
     has DateTime      $.creation      is column .= now;
     has UInt          $.number        is column;
-    has DB::Project   $.project       is column;
+    has Project       $.project       is column;
     has Str           $.base-url      is column;
     has Str           $.head-url      is column;
     has Str           $.head-branch   is column;
@@ -240,7 +234,7 @@ model Command is rw is table<command> {
     has Str               $.comment-id     is column;
     has Str               $.comment-url    is column;
 
-    has DB::CommandStatus $.status  is column;
+    has DB::CommandStatus $.status  is column = DB::COMMAND_NEW;
     has DB::CommandEnum   $.command is column;
 
     # If it's a re-test command, the test set we should re test

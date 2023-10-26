@@ -26,8 +26,9 @@ method process-worklist() is serial-dedup {
     for DB::Command.^all.grep(*.status == DB::COMMAND_NEW) -> $command {
         given $command.command {
             when DB::RE_TEST {
+                my $ts;
                 if $command.pr {
-                    my $ts = DB::CITestSet.^all.sort(-*.id).first( *.pr.number == $command.pr.number );
+                    $ts = DB::CITestSet.^all.sort(-*.id).first( *.pr.number == $command.pr.number );
                     unless $ts {
                         error "No TestSet for the PR of the given command found: " ~ $command.id;
                         $command.status = DB::COMMAND_DONE;
@@ -37,21 +38,24 @@ method process-worklist() is serial-dedup {
 
                     $command.test-set = $ts;
                     $command.^save;
-
-                    debug "CITestSetManager: Starting re-test for command: " ~ $command.id;
-
-                    for $!test-set-listeners.keys {
-                        $_.re-test-test-set($ts)
-                    }
-
-                    $ts.status = DB::WAITING_FOR_TEST_RESULTS;
-                    $ts.^save;
-
-                    $command.status = DB::COMMAND_DONE;
-                    $command.^save;
-
-                    $_.command-accepted($command) for $!status-listeners.keys;
                 }
+                else {
+                    $ts = $command.ts;
+                }
+
+                debug "CITestSetManager: Starting re-test for command: " ~ $command.id;
+
+                for $!test-set-listeners.keys {
+                    $_.re-test-test-set($ts)
+                }
+
+                $ts.status = DB::WAITING_FOR_TEST_RESULTS;
+                $ts.^save;
+
+                $command.status = DB::COMMAND_DONE;
+                $command.^save;
+
+                $_.command-accepted($command) for $!status-listeners.keys;
             }
         }
     }
@@ -106,6 +110,14 @@ method add-test-set(:$test-set!, :$source-spec!) {
     $test-set.status = DB::UNPROCESSED;
     $test-set.source-spec: $source-spec;
     $test-set.^save;
+    self.process-worklist;
+}
+
+method re-test(:$test-set!) {
+    DB::Command.^create:
+        :command(DB::RE_TEST),
+        :$test-set,
+    ;
     self.process-worklist;
 }
 

@@ -1,5 +1,5 @@
 <:use 'page.crotmp'>
-<|page('Test')>
+<|page('Test', .login-url)>
 <h1>Test <.id></h1>
 
 <ul>

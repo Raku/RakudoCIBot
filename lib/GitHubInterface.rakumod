@@ -3,18 +3,51 @@ unit class GitHubInterface;
 use Config;
 use Log::Async;
 use WebService::GitHub::AppAuth;
+use WebService::GitHub::OAuth;
 use WebService::GitHub;
 use GitHubCITestRequester;
 
 constant $gql-endpoint = "https://api.github.com/graphql";
 has WebService::GitHub::AppAuth $!gh-auth;
+has WebService::GitHub::OAuth $!gh-oauth;
+has $!redirect-url;
+has $!client-id;
 has WebService::GitHub $!gh;
 has GitHubCITestRequester $.processor is required;
 
-submethod TWEAK(:$app-id!, :$pem!) {
+method oauth-step-one-url($state) {
+    {
+        url => 'https://github.com/login/oauth/authorize',
+        query-params => [
+            client_id => $!client-id,
+            redirect_uri => $!redirect-url,
+            state => $state,
+            allow_signups => 'false',
+        ],
+    }
+}
+
+method oauth-code-to-token($code, $state) {
+    $!gh-oauth.step-two($state, $code, $state);
+}
+
+method oauth-user-name($token) {
+    my WebService::GitHub $gh-oauth-client .= new: :pat($token);
+    my %user = self!validate($gh-oauth-client.users.get-authenticated().data);
+    return %user<login>;
+}
+
+submethod TWEAK(:$app-id!, :$!client-id!, :$client-secret!, :$pem!, :$!redirect-url!) {
     $!gh-auth .= new:
         :$app-id,
-        :$pem
+        :$pem,
+    ;
+
+    $!gh-oauth .= new:
+        :$!client-id,
+        :$client-secret,
+        :$!redirect-url,
+        :$pem,
     ;
 
     $!gh .= new:

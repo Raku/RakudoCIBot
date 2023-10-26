@@ -6,6 +6,8 @@ db:
     password: some_pw
 
 github-app-id: "87729"
+github-client-id: "Iv1.8f11845b87ff14f0"
+github-client-secret: "fooop"
 github-app-key-file: "rakudocibot.2020-11-06.private-key.pem"
 projects:
     rakudo:
@@ -28,6 +30,7 @@ projects:
         install-id: 20243470
 
 hook-url: https://cibot.rakudo.org/
+jwt-secret: "N#xTe4>IGSWfH#M&MYXxI~#w9yj@X8X/g8-N{;n)5D>kFh~AaW"
 
 obs-user: some_user
 obs-password: "some_pw"

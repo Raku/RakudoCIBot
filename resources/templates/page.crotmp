@@ -1,4 +1,5 @@
-<:macro page($title)>
+<:use 'login.crotmp'>
+<:macro page($title, $login-data)>
 <!doctype html>
 <html class="no-js" lang="">
 
@@ -21,6 +22,7 @@
 
 <body>
 <a href="/"><img id="logo" src="/img/RCB-logo.svg" alt="A colorful humanoid robot holding up an arm next to a Camelia butterfly."/></a>
+<&login($login-data)>
 
 <:body>
 </body>

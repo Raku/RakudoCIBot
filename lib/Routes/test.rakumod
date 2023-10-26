@@ -4,11 +4,12 @@ use Cro::HTTP::Router;
 use Cro::WebApp::Template;
 use Red::Operators:api<2>;
 
-sub test-routes() is export {
+sub test-routes(&gen-login-data) is export {
     route {
         get -> "test", UInt $id {
             with DB::CITest.^load($id) {
                 my %data =
+                    login-url => gen-login-data("/test/$id"),
                     id => .id,
                     name => .name,
                     backend => .platform-test-set.platform,

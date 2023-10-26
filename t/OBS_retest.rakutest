@@ -145,7 +145,7 @@ my OBS $obs .= new:
 ### Testing starts here
 my $testset = DB::CITestSet.^create:
     event-type        => DB::MAIN_BRANCH,
-    project           => DB::RAKUDO,
+    project           => RAKUDO,
     git-url           => "https://github.com/rakudo/rakudo.git",
     commit-sha        => '0123456789012345678901234567890123456789',
     user-url          => "https://github.com/rakudo/rakudo/commit/0123456789012345678901234567890123456789",

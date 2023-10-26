@@ -12,7 +12,10 @@ my $data-dir = $*PROGRAM.parent.add('data');
 
 my $processor = mocked(GitHubCITestRequester);
 
-my GitHubInterface $parser .= new(:app-id(123456), :$processor, :pem($data-dir.add("dummy.pem").slurp));
+my GitHubInterface $parser .= new(:app-id(123456), :client-id('Iv1.1234567890abcdef'),
+                                :client-secret('some-secret'), :redirect-url('https://some-example.org/gh-oauth-callback'),
+                                :$processor, :pem($data-dir.add("dummy.pem").slurp));
+        
 
 $parser.parse-hook-request('pull_request', from-json $data-dir.add("webhook-github-create-pull.body").slurp);
 check-mock($processor,

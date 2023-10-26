@@ -1,5 +1,11 @@
 use YAMLish;
 
+enum Project <
+    MOAR
+    NQP
+    RAKUDO
+>;
+
 class ConfigProject {
     has $.project;
     has $.repo;
@@ -24,16 +30,27 @@ class ConfigProjects {
     has $.rakudo is required;
     has $.nqp is required;
     has $.moar is required;
+
+    method for-id(Project $id) {
+        given $id {
+            when RAKUDO { return $!rakudo }
+            when NQP { return $!nqp }
+            when MOAR { return $!moar }
+        }
+    }
 }
 
 class Config {
     has %.db;
 
     has $.github-app-id;
+    has $.github-client-id;
+    has $.github-client-secret;
     has $.github-app-key-file;
     has $.projects;
 
     has $.hook-url;
+    has $.jwt-secret;
 
     has $.obs-user;
     has $.obs-password;
@@ -70,15 +87,18 @@ class Config {
         Config.new:
             db => %config<db>,
 
-            github-app-id       => %config<github-app-id>,
-            github-app-key-file => %config<github-app-key-file>,
-            projects            => ConfigProjects.new(
+            github-app-id        => %config<github-app-id>,
+            github-client-id     => %config<github-client-id>,
+            github-client-secret => %config<github-client-secret>,
+            github-app-key-file  => %config<github-app-key-file>,
+            projects             => ConfigProjects.new(
                                        rakudo => ConfigProject.from-config(%config<projects><rakudo>),
                                        nqp    => ConfigProject.from-config(%config<projects><nqp>),
                                        moar   => ConfigProject.from-config(%config<projects><moar>),
                                    ),
 
             hook-url => %config<hook-url>,
+            jwt-secret => %config<jwt-secret>,
 
             obs-user     => %config<obs-user>,
             obs-password => %config<obs-password>,

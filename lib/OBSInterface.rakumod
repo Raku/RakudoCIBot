@@ -28,7 +28,7 @@ submethod TWEAK() {
         headers => [
             Accept => 'application/xml',
             Authorization => $!auth-str,
-        ];
+        ]
         #`[
         tls => {
             ssl-key-log-file => 'ssl-key-log-file',

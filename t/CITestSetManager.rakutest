@@ -88,7 +88,7 @@ moar-commit-sha   => '0123456789012345678901234567890123456789',
 ### Adding a new test set
 my $test-set = DB::CITestSet.^create:
     event-type => DB::MAIN_BRANCH,
-    project => DB::RAKUDO,
+    project => RAKUDO,
     git-url => "https://github.com/rakudo/rakudo.git",
     user-url => "https://github.com/rakudo/rakudo/commit/0123456789012345678901234567890123456789",
     commit-sha => '0123456789012345678901234567890123456789',

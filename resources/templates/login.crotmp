@@ -1,0 +1,18 @@
+<:sub login($login-data)>
+<:part login-part(:$logged-in, :$name, :$logout-url)>
+<?$logged-in>
+  <span class="username"><$name></span>
+  <form action="<$logout-url>" method="post">
+    <input type="submit" value="Logout">
+  </form>
+</?>
+<!>
+  <form action="<$login-data.url>" method="get">
+    <@$login-data.query-params>
+    <input type="hidden" name="<.key>" value="<.value>">
+    </@>
+    <input type="submit" value="Login">
+  </form>
+</!>
+</:>
+</:>
