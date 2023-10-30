@@ -57,8 +57,10 @@ class TestCITestStatusListener does CITestStatusListener {
 my $dummy-id = "some dummy id";
 
 class TestSourceArchiveCreator {
-    method create-archive(SourceSpec $source-spec --> Str) {
-        return $dummy-id;
+    method create-archive(DB::CITestSet $test-set) {
+        $test-set.source-archive-exists = True;
+        $test-set.source-archive-id = $dummy-id;
+        $test-set.^save;
     }
 }
 

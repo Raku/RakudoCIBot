@@ -85,8 +85,14 @@ my $obs-interface = mocked(OBSInterface,
 );
 
 my $source-archive-creator = mocked(SourceArchiveCreator,
+    overriding => {
+        create-archive => -> $test-set {
+            $test-set.source-archive-exists = True;
+            $test-set.source-archive-id = $dummy-src-id;
+            $test-set.^save;
+        },
+    },
     returning => {
-        create-archive   => $dummy-src-id,
         get-archive-path => $dummy-src-path,
     }
 );
