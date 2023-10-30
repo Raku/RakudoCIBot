@@ -128,6 +128,7 @@ method !process-pr-commit-task(PRCommitTask $commit) {
 }
 
 method !process-pr-comment-task(PRCommentTask $comment) {
+    return without $comment.body;
     my Bool $need-to-process = False;
     for $comment.body ~~ m:g:i/ '{' \s* 'rcb:' \s* ( <[ \w - ]>+ ) \s* '}' / -> $m {
         my $command-text = $m[0];
