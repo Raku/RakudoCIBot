@@ -1,0 +1,13 @@
+diff --git a/build/setup.pm b/build/setup.pm
+index 40c0ada5b..de2fbc061 100644
+--- a/build/setup.pm
++++ b/build/setup.pm
+@@ -532,7 +532,7 @@ my %OS_AIX = (
+ my %OS_LINUX = (
+     %OS_POSIX,
+ 
+-    syslibs => [ @{$OS_POSIX{syslibs}}, qw( rt dl ) ],
++    syslibs => [ @{$OS_POSIX{syslibs}}, qw( rt dl SegFault ) ],
+ 
+     -thirdparty => {
+         uv => { %TP_UVDUMMY, objects => '$(UV_LINUX)' },

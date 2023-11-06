@@ -1,0 +1,79 @@
+#
+# spec file for package rakudo-moarvm
+#
+# Copyright (c) 2021 SUSE LLC
+#
+# All modifications and additions to the file contributed by third parties
+# remain the property of their copyright owners, unless otherwise agreed
+# upon. The license for this file, and modifications and additions to the
+# file, is the same license as for the pristine package itself (unless the
+# license for the pristine package is not an Open Source License, in which
+# case the license is the MIT License). An "Open Source License" is a
+# license that conforms to the Open Source Definition (Version 1.9)
+# published by the Open Source Initiative.
+
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
+#
+
+%global rakudo_rev 388924D67C75569C85DAD83A1772F98D32525FA9_D397598A16ACA9AA7C62513B7FA9411E0820C394_3AE8A31C168A08430BB8764A25CEAFAB3B98F172
+%global nqp_rev 388924D67C75569C85DAD83A1772F98D32525FA9_D397598A16ACA9AA7C62513B7FA9411E0820C394_3AE8A31C168A08430BB8764A25CEAFAB3B98F172
+%global moar_rev 388924D67C75569C85DAD83A1772F98D32525FA9_D397598A16ACA9AA7C62513B7FA9411E0820C394_3AE8A31C168A08430BB8764A25CEAFAB3B98F172
+
+Name:           rakudo-moarvm
+Version:        %rakudo_rev
+Release:        2.1
+Summary:        Raku implementation running on MoarVM
+License:        Artistic-2.0
+Group:          Development/Languages/Other
+URL:            http://rakudo.org/
+Source0:        http://raku-ci.org/test/12345/%{version}-rakudo.tar.xz
+Patch0:         rakudo-test-log.diff
+BuildRequires:  fdupes
+BuildRequires:  moarvm-devel = %moar_rev
+BuildRequires:  nqp-moarvm = %nqp_rev
+BuildRequires:  perl(YAML::Tiny)
+BuildRequires:  curl
+Provides:       raku = %{version}
+Requires:       nqp-moarvm = %nqp_rev
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+%ifarch s390x
+BuildRequires:  libffi-devel
+%endif
+
+%description
+Rakudo is an implementation of the Raku programming language specification that
+runs on the MoarVM virtual machine.
+
+%prep
+%setup -q -n %{rakudo_rev}-rakudo
+%patch0 -p1
+
+%build
+perl Configure.pl --prefix="%{_prefix}" --ignore-errors
+make
+
+%check
+rm t/08-performance/99-misc.t
+make test
+
+%install
+%make_install
+mkdir -p "%{buildroot}/%{_datadir}/perl6/bin"
+cp tools/install-dist.p6 "%{buildroot}/%{_datadir}/perl6/bin/install-perl6-dist"
+chmod +x "%{buildroot}/%{_datadir}/perl6/bin/install-perl6-dist"
+sed -i -e '1s:!/usr/bin/env :!/usr/bin/:' "%{buildroot}/%{_datadir}/perl6/bin"/*
+rm "%{buildroot}/%{_bindir}/raku"
+rm "%{buildroot}/%{_bindir}/raku-debug"
+ln -s rakudo "%{buildroot}/%{_bindir}/raku"
+ln -s rakudo-debug "%{buildroot}/%{_bindir}/raku-debug"
+%fdupes %{buildroot}/%{_bindir}
+%fdupes %{buildroot}/%{_datadir}/perl6/runtime
+
+%files
+%defattr(-,root,root)
+%doc CREDITS
+%license LICENSE
+%{_bindir}/*
+%{_datadir}/perl6
+
+%changelog
