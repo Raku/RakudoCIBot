@@ -79,6 +79,7 @@ submethod TWEAK() {
         $!obs-interface .= new:
             user     => config.obs-user,
             password => config.obs-password,
+            project  => config.obs-project,
         ;
         $!obs .= new:
             :$!source-archive-creator,

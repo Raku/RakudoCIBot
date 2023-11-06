@@ -11,7 +11,7 @@ has Cro::HTTP::Client $!cro;
 has LibXML     $!xml-parser .= new;
 
 has $.apiurl = 'https://api.opensuse.org';
-has $.project = "home:patrickbkr:raku-ci";
+has Str:D $.project is required;
 has Str:D $.user is required;
 has Str:D $.password is required;
 has $!auth-str;

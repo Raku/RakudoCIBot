@@ -54,6 +54,7 @@ class Config {
 
     has $.obs-user;
     has $.obs-password;
+    has $.obs-project;
 
     has $.obs-check-duration;
     has $.obs-min-run-duration;
@@ -102,6 +103,7 @@ class Config {
 
             obs-user     => %config<obs-user>,
             obs-password => %config<obs-password>,
+            obs-project => %config<obs-project>,
 
             obs-check-duration                 => %config<obs-check-duration>,
             obs-min-run-duration               => %config<obs-min-run-duration>,
