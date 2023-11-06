@@ -337,13 +337,8 @@ method !determine-source-spec(:$project!, :$git-url!, :$commit-sha!, :$pr --> So
     my $did-things = False;
     with $pr {
         my %head-data = self!github-url-to-project-repo($pr.head-url);
-        if $project == RAKUDO    && %head-data<repo> eq config.projects.rakudo.repo ||
-                $project == NQP  && %head-data<repo> eq config.projects.nqp.repo ||
-                $project == MOAR && %head-data<repo> eq config.projects.moar.repo {
-            my $uses-core-repos = %head-data<slug> eq ($project == RAKUDO ?? config.projects.rakudo.slug !!
-                                                       $project == NQP    ?? config.projects.nqp.slug !!
-                                                       $project == MOAR   ?? config.projects.moar.slug !!
-                                                       "should never happen");
+        if %head-data<repo> eq config.projects.for-id($project).repo {
+            my $uses-core-repos = %head-data<slug> eq config.projects.for-id($project).slug;
             my ($r-proj, $r-repo, $n-proj, $n-repo, $m-proj, $m-repo) = do if $uses-core-repos {
                 config.projects.rakudo.project, config.projects.rakudo.repo,
                 config.projects.nqp.project,    config.projects.nqp.repo,
