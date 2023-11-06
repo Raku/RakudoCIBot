@@ -7,7 +7,6 @@ use WebService::GitHub::OAuth;
 use WebService::GitHub;
 use GitHubCITestRequester;
 
-constant $gql-endpoint = "https://api.github.com/graphql";
 has WebService::GitHub::AppAuth $!gh-auth;
 has WebService::GitHub::OAuth $!gh-oauth;
 has $!redirect-url;
