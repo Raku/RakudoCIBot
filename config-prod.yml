@@ -29,7 +29,7 @@ projects:
         slug: MoarVM/MoarVM
         install-id: 20243470
 
-hook-url: https://cibot.rakudo.org/
+web-url: https://cibot.rakudo.org/
 jwt-secret: "N#xTe4>IGSWfH#M&MYXxI~#w9yj@X8X/g8-N{;n)5D>kFh~AaW"
 
 obs-user: some_user

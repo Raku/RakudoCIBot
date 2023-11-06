@@ -116,7 +116,7 @@ method process-worklist() is serial-dedup {
                 $spec ~~ s{ '<moar_rev>' }     = $source-id;
                 $spec ~~ s{ '<nqp_rev>' }      = $source-id;
                 $spec ~~ s{ '<rakudo_rev>' }   = $source-id;
-                $spec ~~ s{ '<rcb_hook_url>' } = config.hook-url ~ $!hook-suffix ~ "?pts-id=" ~ $running-pts.id;
+                $spec ~~ s{ '<rcb_hook_url>' } = config.web-url ~ $!hook-suffix ~ "?pts-id=" ~ $running-pts.id;
                 $!interface.upload-file($package, $package ~ ".spec", :blob($spec));
                 my $dom = $!interface.commit($package);
             }

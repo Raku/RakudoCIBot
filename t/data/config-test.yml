@@ -27,7 +27,7 @@ projects:
         repo-url: https://github.com/MoarVM/MoarVM.git
         install-id: 20243470
 
-hook-url: https://rcb-host.org/
+web-url: https://rcb-host.org/
 
 obs-user: someuser
 obs-password: "some_password"

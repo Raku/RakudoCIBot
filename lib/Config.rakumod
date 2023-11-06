@@ -49,7 +49,7 @@ class Config {
     has $.github-app-key-file;
     has $.projects;
 
-    has $.hook-url;
+    has $.web-url;
     has $.jwt-secret;
 
     has $.obs-user;
@@ -85,8 +85,8 @@ class Config {
     has $.log-level;
 
     submethod TWEAK() {
-        unless $!hook-url.ends-with('/') {
-            $!hook-url ~= '/';
+        unless $!web-url.ends-with('/') {
+            $!web-url ~= '/';
         }
     }
 
@@ -104,7 +104,7 @@ class Config {
                                        moar   => ConfigProject.from-config(%config<projects><moar>),
                                    ),
 
-            hook-url => %config<hook-url>,
+            web-url => %config<web-url>,
             jwt-secret => %config<jwt-secret>,
 
             obs-user     => %config<obs-user>,

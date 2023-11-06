@@ -65,7 +65,7 @@ submethod TWEAK() {
         client-secret => config.github-client-secret,
         pem => $gh-pem,
         processor => $!requester,
-        redirect-url => config.hook-url ~ "gh-oauth-callback",
+        redirect-url => config.web-url ~ "gh-oauth-callback",
     ;
     $!requester.github-interface = $!github-interface;
     $!testset-manager.register-status-listener($!requester);
@@ -140,9 +140,9 @@ method start() {
     $http.start;
 
     say "Listening at http://{config.web-host}:{config.web-port}";
-    say "GitHub Homepage URL: {config.hook-url}";
-    say "GitHub Callback URL: {config.hook-url}gh-oauth-callback";
-    say "GitHub Webhook URL:  {config.hook-url}github-hook";
+    say "GitHub Homepage URL: {config.web-url}";
+    say "GitHub Callback URL: {config.web-url}gh-oauth-callback";
+    say "GitHub Webhook URL:  {config.web-url}github-hook";
 }
 
 method stop() {
