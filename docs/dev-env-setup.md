@@ -91,6 +91,6 @@ Setup OBS
 Download ngrok
 --------------
 
-- download and start
+- download and start via `ngrok http 10000`
 - fill in hook URL on GitHub
 
