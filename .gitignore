@@ -1,6 +1,8 @@
 *.pem
 *.iml
 *.swp
+*~
+Session.vim
 .precomp/
 .idea/
 config-dev.yml
