@@ -84,6 +84,12 @@ class Config {
 
     has $.log-level;
 
+    submethod TWEAK() {
+        unless $!hook-url.ends-with('/') {
+            $!hook-url ~= '/';
+        }
+    }
+
     method from-config(%config) {
         Config.new:
             db => %config<db>,
