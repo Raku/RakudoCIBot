@@ -57,13 +57,17 @@ sub routes(CITestSetManager $tsm, SourceArchiveCreator $sac, GitHubInterface $gi
         }
 
         sub gen-login-data($origin) {
-            my $url-data = $github-interface.oauth-step-one-url(encode-percents($origin));
-            return $url-data;
+            return {
+                login-url => $github-interface.oauth-step-one-url(encode-percents($origin)),
+                :$origin,
+            }
         }
 
         post -> "logout" {
-            set-cookie $jwt-gh-cookie-name, "", Max-Age => 0;
-            redirect :see-other, "/";
+            request-body -> (:$origin!) {
+                set-cookie $jwt-gh-cookie-name, "", Max-Age => 0;
+                redirect :see-other, $origin;
+            }
         }
 
         get -> "gh-oauth-callback", :$code, :$state {

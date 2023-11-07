@@ -3,12 +3,13 @@
 <?$logged-in>
   <span class="username"><$name></span>
   <form action="<$logout-url>" method="post">
+    <input type="hidden" name="origin" value="<$login-data.origin>">
     <input type="submit" value="Logout">
   </form>
 </?>
 <!>
-  <form action="<$login-data.url>" method="get">
-    <@$login-data.query-params>
+  <form action="<$login-data.login-url.url>" method="get">
+    <@$login-data.login-url.query-params>
     <input type="hidden" name="<.key>" value="<.value>">
     </@>
     <input type="submit" value="Login">
