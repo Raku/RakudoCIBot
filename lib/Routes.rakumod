@@ -83,24 +83,9 @@ sub routes(CITestSetManager $tsm, SourceArchiveCreator $sac, GitHubInterface $gi
             redirect decode-percents($state);
         }
 
-        post -> Cro::HTTP::Auth $session, "retest", $testset-id {
-            my $gh-token = $session.token<gh-token>;
-            my $gh-user = $session.token<username>;
-
-            my $ts = DB::CITestSet.^load: :id($testset-id);
-            my $conf = config.projects.for-id($ts.pr.project);
-            if $github-interface.can-user-merge-repo(owner => $conf.project, repo => $conf.repo, username => $gh-user) {
-                $tsm.re-test($ts);
-                created "/testset/$testset-id";
-            }
-            else {
-                forbidden;
-            }
-        }
-
         include home-routes(&gen-login-data);
         include test-routes(&gen-login-data);
-        include testset-routes($sac, &gen-login-data);
+        include testset-routes($sac, $tsm, $github-interface, &gen-login-data);
         include source-routes($sac);
         include github-hook-routes($github-interface);
     }

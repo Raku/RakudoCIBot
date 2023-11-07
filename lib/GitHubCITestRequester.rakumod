@@ -574,12 +574,14 @@ method !process-merge-on-success() {
 }
 
 method command-accepted($command) {
-    my $proj-repo = self!db-project-to-project-repo($command.pr.project);
+    with $command.pr {
+        my $proj-repo = self!db-project-to-project-repo($command.pr.project);
 
-    $!github-interface.add-issue-comment:
-        owner  => $proj-repo<project>,
-        repo   => $proj-repo<repo>,
-        number => $command.pr.number,
-        body   => ($command.command == DB::RE_TEST ?? "@" ~ $command.comment-author ~ " Re-testing of this PR started." !!
-                   "What? I confused myself!");
+        $!github-interface.add-issue-comment:
+            owner  => $proj-repo<project>,
+            repo   => $proj-repo<repo>,
+            number => $command.pr.number,
+            body   => ($command.command == DB::RE_TEST ?? "@" ~ $command.comment-author ~ " Re-testing of this PR started." !!
+                       "What? I confused myself!");
+    }
 }

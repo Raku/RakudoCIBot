@@ -1,5 +1,5 @@
 <:use 'page.crotmp'>
-<|page('Test Set', .login-url)>
+<|page('Test Set', .login-data)>
 <h1>Test Set <.id> <div class="status-indicator <.status-indicator-class>"></div></h1>
 
 <div class="cols">
@@ -20,6 +20,12 @@
     <li>Moar SHA: <.moar-commit-sha>
   </ul></div>
 </div>
+
+<?.logged-in>
+<form action="<.retest-url>" method="post">
+<input type="submit" value="Re-test">
+</form>
+</?>
 
 <h1>Tests</h1>
 <@.backends>

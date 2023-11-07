@@ -230,9 +230,9 @@ model Command is rw is table<command> {
     # If triggered via a GitHub PR comment
     has UInt              $!fk-pr          is referencing( *.id, :model(DB::GitHubPR) );
     has DB::GitHubPR      $.pr             is relationship( *.fk-pr );
-    has Str               $.comment-author is column;
-    has Str               $.comment-id     is column;
-    has Str               $.comment-url    is column;
+    has Str               $.comment-author is column{ :nullable };
+    has Str               $.comment-id     is column{ :nullable };
+    has Str               $.comment-url    is column{ :nullable };
 
     has DB::CommandStatus $.status  is column = DB::COMMAND_NEW;
     has DB::CommandEnum   $.command is column;

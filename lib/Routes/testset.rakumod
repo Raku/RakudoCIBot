@@ -1,13 +1,37 @@
 use DB;
 use Formatters;
+use Config;
 
 use Cro::HTTP::Router;
 use Cro::WebApp::Template;
 use Red::Operators:api<2>;
 
-sub testset-routes($sac, &gen-login-data) is export {
+sub testset-routes($sac, $tsm, $github-interface, &gen-login-data) is export {
     route {
+        post -> Cro::HTTP::Auth $session, "testset", UInt $id, :$command where "retest" {
+            my $gh-token = $session.token<gh-token>;
+            my $gh-user = $session.token<username>;
+
+            my $ts = DB::CITestSet.^load: :$id;
+            my $conf = config.projects.for-id($ts.project);
+            if $github-interface.can-user-merge-repo(owner => $conf.project, repo => $conf.repo, username => $gh-user) {
+                $tsm.re-test($ts);
+                created "/testset/$id";
+            }
+            else {
+                forbidden;
+            }
+        }
+
+        get -> Cro::HTTP::Auth $session, "testset", UInt $id {
+            make-testset-page($id, True);
+        }
+
         get -> "testset", UInt $id {
+            make-testset-page($id, False);
+        }
+
+        sub make-testset-page($id, $logged-in) {
             with DB::CITestSet.^load($id) {
                 sub order-tests(@tests) {
                     my @ordered = @tests.grep(!*.superseded);
@@ -28,7 +52,7 @@ sub testset-routes($sac, &gen-login-data) is export {
                     };
                 }
                 my %data =
-                    login-url => gen-login-data("/testset/$id"),
+                    login-data => gen-login-data("/testset/$id"),
                     id => .id,
                     created-at => .creation,
                     project => .project,
@@ -39,6 +63,8 @@ sub testset-routes($sac, &gen-login-data) is export {
                         (.status != DB::DONE ?? "in-progress" !!
                         ([&&] .platform-test-sets.Seq.map({ $_.tests.Seq.map({.superseded || .status == DB::SUCCESS}) }).flat) ?? "success" !! "failure"),
                     error => .error,
+                    :$logged-in,
+                    retest-url => "/testset/$id?command=retest",
                     rakudo-git-url => .source-spec.rakudo-git-url,
                     rakudo-commit-sha => .source-spec.rakudo-commit-sha,
                     nqp-git-url => .source-spec.nqp-git-url,

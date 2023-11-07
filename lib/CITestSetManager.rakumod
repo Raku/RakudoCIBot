@@ -40,7 +40,7 @@ method process-worklist() is serial-dedup {
                     $command.^save;
                 }
                 else {
-                    $ts = $command.ts;
+                    $ts = $command.test-set;
                 }
 
                 debug "CITestSetManager: Starting re-test for command: " ~ $command.id;
@@ -113,7 +113,7 @@ method add-test-set(:$test-set!, :$source-spec!) {
     self.process-worklist;
 }
 
-method re-test(:$test-set!) {
+method re-test($test-set) {
     DB::Command.^create:
         :command(DB::RE_TEST),
         :$test-set,
