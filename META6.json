@@ -21,7 +21,7 @@
         "Log::Async:ver<0.0.8>",
         "JSON::JWT:ver<1.1.1>:auth<zef:raku-community-modules>",
         "YAMLish:ver<0.0.6>",
-        "WebService::GitHub:ver<0.2.2>:auth<zef:raku-community-modules>:api<1>"
+        "WebService::GitHub:ver<1.0.1>:auth<zef:raku-community-modules>:api<1>"
     ],
     "test-depends": [
         "Test::SourceFiles",
